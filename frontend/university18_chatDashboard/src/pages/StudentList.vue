@@ -13,12 +13,41 @@
   </template>
 
   <script setup>
-  import { defineEmits } from 'vue';
+  import { ref, watch, onMounted, defineEmits } from 'vue';
+  import { io } from "socket.io-client"
+
+  const students = ref([]);
   
-  const students = [
-    { id: 'student01', name: 'Aman Singh', username: 'student01' },
-    { id: 'student02', name: 'Chitranjan', username: 'student02' }
-  ]; // Sample data
+  // const students = [
+  //   { id: 'student01', name: 'Aman Singh', username: 'student01' },
+  //   { id: 'student02', name: 'Chitranjan', username: 'student02' }
+  // ]; // Sample data
+
+  // Initialize socket.io client
+  const socket = io('http://localhost:3000');
+  
+  // Emit event when a new student joins
+  socket.on('newStudent', (data) => {
+    console.log('New student joined:', data);
+    // Add new student to the students array
+    if(!students.value.some(s => s.id === data.room))
+    students.value.push({ id: data.room, name: data.sender, username: data.room });
+    // Emit event to update the list of students
+    // emit('updateStudents', students);
+  });
+  
+  // Emit event when a student leaves
+  // socket.on('studentLeft', (studentId) => {
+  //   console.log('Student left:', studentId);
+    // Remove student from the students array
+    // students = students.filter((student) => student.id!== studentId);
+    // Emit event to update the list of students
+    // emit('updateStudents', students);
+  // });
+  
+  // Emit event when a new message is received
+
+
   
   const emit = defineEmits(['studentSelected']);
   function selectStudent(studentId) {

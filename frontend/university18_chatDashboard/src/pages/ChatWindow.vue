@@ -2,7 +2,7 @@
     <div class="chat-window">
     <div class="conversation">
       <div v-for="msg in messages" :key="msg.id" :class="msg.sender" class="messages">
-        <div v-if="msg.sender === 'examiner'" class="message reply">
+        <div v-if="msg.senderType === 'examiner'" class="message reply">
           <div class="avatar">U18</div>
           <div class="text">{{ msg.text }}</div>
         </div>
@@ -21,6 +21,7 @@
 
 <script setup>
 import { watch, ref, onMounted, nextTick } from 'vue';
+import axios from 'axios';
 import { io } from "socket.io-client";
 import { defineProps } from 'vue';
 
@@ -32,6 +33,11 @@ const socket = io("http://localhost:3000");
 
 const messages = ref([]);
 const newMessage = ref('');
+
+async function loadMessages(roomId) {
+  const response = await axios.get(`http://localhost:3000/messages/${roomId}`);
+  messages.value = response.data;
+}
 
 function leaveRoom(roomId) {
   if (roomId) {
@@ -57,7 +63,12 @@ watch(() => props.selectedStudentId, (newId, oldId) => {
 
 function sendMessage() {
   if (newMessage.value.trim()) {
-    const message = { room: props.selectedStudentId, text: newMessage.value, sender: 'examiner' };
+    const message = { room: props.selectedStudentId, 
+                      sender: 'Gunjan', 
+                      sender_id: "examiner01", 
+                      recipient: props.selectedStudentId, 
+                      text: newMessage.value, 
+                      senderType: 'examiner' };
     socket.emit('message', message);
     // messages.value.push(message);
     newMessage.value = '';

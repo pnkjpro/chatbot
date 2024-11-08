@@ -5,14 +5,14 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'Index',
-      component: () => import('../pages/Index.vue'),
-    },
-    {
-      path: '/dashboard',
       name: 'Dashboard',
       component: () => import('../pages/ChatDashboard.vue'),
     },
+    // {
+    //   path: '/dashboard',
+    //   name: 'Dashboard',
+    //   component: () => import('../pages/ChatDashboard.vue'),
+    // },
   ],
 })
 

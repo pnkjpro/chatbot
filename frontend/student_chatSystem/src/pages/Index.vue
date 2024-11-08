@@ -4,7 +4,7 @@
     <div v-if="isChatOpen" class="chat-window">
       <div class="chat-header">Chat with Examiner</div>
       <div class="chat-body" ref="chatBody">
-        <div v-for="msg in messages" :key="msg.id" :class="msg.sender">
+        <div v-for="msg in messages" :key="msg.id" :class="msg.senderType">
           <div class="message-bubble">{{ msg.text }}</div>
         </div>
       </div>
@@ -29,7 +29,12 @@ function toggleChat() {
 
 function sendMessage() {
   if (newMessage.value.trim()) {
-    const message = { room: "student02", text: newMessage.value, sender: 'student' };
+    const message = { room: "student02", 
+                      sender: "Akash", 
+                      sender_id: "student02", 
+                      recipient: "examiner01", 
+                      text: newMessage.value, 
+                      senderType: "student" };
     socket.emit('message', message);
     // messages.value.push(message);
     newMessage.value = '';
@@ -49,6 +54,7 @@ watch(messages, scrollToBottom);
 
 onMounted(() => {
   socket.emit('joinRoom', 'student02');
+  messages.value.push({ text: 'Hi, How May I Help You?😎', senderType: 'examiner'});
   socket.on('message', (data) => {
     messages.value.push(data);
   });
@@ -96,8 +102,8 @@ onMounted(() => {
 
 .student .message-bubble {
   text-align: right;
-  background-color: #007bff;
-  color: white;
+  background-color: #e1e1e1;
+  color: black;
   padding: 8px;
   border-radius: 8px;
   margin: 5px 0;
@@ -106,8 +112,8 @@ onMounted(() => {
 
 .examiner .message-bubble {
   text-align: left;
-  background-color: #e1e1e1;
-  color: black;
+  background-color: #007bff;
+  color: white;
   padding: 8px;
   border-radius: 8px;
   margin: 5px 0;
