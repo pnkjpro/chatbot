@@ -8,6 +8,11 @@ const router = createRouter({
       name: 'Dashboard',
       component: () => import('../pages/ChatDashboard.vue'),
     },
+    {
+      path: '/ui',
+      name: 'UI',
+      component: () => import('../pages/CheckingUi.vue'),
+    }
     // {
     //   path: '/dashboard',
     //   name: 'Dashboard',

@@ -16,22 +16,30 @@
 <script setup>
 import { ref, onMounted, watch, nextTick } from 'vue';
 import { io } from "socket.io-client";
+import axios from "axios";
 
 const socket = io("http://localhost:3000");
 
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref('');
+// const chatInitiated = ref(false);
 
 function toggleChat() {
   isChatOpen.value = !isChatOpen.value;
+  if (messages.value.length === 0) {
+      setTimeout(() => {
+      messages.value.push({ text: 'Hi, How May I Help You?😎', senderType: 'examiner'}); 
+    }, 1000);
+  }
+  
 }
 
 function sendMessage() {
   if (newMessage.value.trim()) {
-    const message = { room: "student02", 
-                      sender: "Akash", 
-                      sender_id: "student02", 
+    const message = { room: "student06", 
+                      sender: "Rajesh", 
+                      sender_id: "student06", 
                       recipient: "examiner01", 
                       text: newMessage.value, 
                       senderType: "student" };
@@ -53,12 +61,22 @@ function scrollToBottom() {
 watch(messages, scrollToBottom);
 
 onMounted(() => {
-  socket.emit('joinRoom', 'student02');
-  messages.value.push({ text: 'Hi, How May I Help You?😎', senderType: 'examiner'});
+  socket.emit('joinRoom', 'student06');
   socket.on('message', (data) => {
     messages.value.push(data);
   });
 });
+
+const fetchMessages = async(roomId) => {
+  const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
+  messages.value = response.data.map(m => ({
+    id: m.id,
+    text: m.content,
+    senderType: m.senderType  // Determine sender type based on sender_id
+  }));
+}
+
+fetchMessages("student06")
 </script>
 
 <style scoped>

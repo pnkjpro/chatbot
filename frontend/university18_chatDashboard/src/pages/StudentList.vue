@@ -15,13 +15,8 @@
   <script setup>
   import { ref, watch, onMounted, defineEmits } from 'vue';
   import { io } from "socket.io-client"
-
+  import axios from "axios";
   const students = ref([]);
-  
-  // const students = [
-  //   { id: 'student01', name: 'Aman Singh', username: 'student01' },
-  //   { id: 'student02', name: 'Chitranjan', username: 'student02' }
-  // ]; // Sample data
 
   // Initialize socket.io client
   const socket = io('http://localhost:3000');
@@ -29,30 +24,32 @@
   // Emit event when a new student joins
   socket.on('newStudent', (data) => {
     console.log('New student joined:', data);
-    // Add new student to the students array
     if(!students.value.some(s => s.id === data.room))
-    students.value.push({ id: data.room, name: data.sender, username: data.room });
-    // Emit event to update the list of students
-    // emit('updateStudents', students);
+    students.value.push({ id: data.room, name: data.sender, username: data.sender_id});
   });
-  
-  // Emit event when a student leaves
-  // socket.on('studentLeft', (studentId) => {
-  //   console.log('Student left:', studentId);
-    // Remove student from the students array
-    // students = students.filter((student) => student.id!== studentId);
-    // Emit event to update the list of students
-    // emit('updateStudents', students);
-  // });
-  
-  // Emit event when a new message is received
 
-
-  
   const emit = defineEmits(['studentSelected']);
   function selectStudent(studentId) {
     emit('studentSelected', studentId);
   }
+
+  // Fetch student data from the server
+  onMounted(() => {
+    axios.get('http://localhost:3000/students')
+     .then(response => {
+        students.value = response.data;
+        students.value = students.value.map(s => ({
+          id: s.sender_id,
+          name: s.sender,
+          username: s.sender_id
+        }))
+        console.log('Fetched students:', students.value);
+      })
+     .catch(error => {
+        console.error('Error fetching students:', error);
+      });
+  });
+
   </script>
 
   <style scoped>
@@ -62,8 +59,8 @@
     background-color: #e1e0e2;
     display: flex;
     flex-direction: column;
-    box-shadow: 0px 5px 4px rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    border-radius: 2px;
   }
   
   .header {
