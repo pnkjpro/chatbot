@@ -3,40 +3,58 @@
     <div class="flex items-center space-x-4 ml-auto">
       <div class="flex items-center space-x-2">
         <div
-          class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center"
+          class="w-8 h-8 rounded-full bg-blue-600 flex text-slate-50 items-center justify-center"
         >
-          <span class="text-sm">PP</span>
+          <span class="text-sm font-semibold">{{
+            getInitials(studentName)
+          }}</span>
         </div>
-        <span>Pankaj Pandey</span>
-        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+        <span>{{ studentName }}</span>
+        <div
+          class="w-2 h-2 rounded-full"
+          :class="status === 'online' ? 'bg-green-500' : 'bg-slate-400'"
+        ></div>
+        <span class="text-sm text-slate-600">{{ status }}</span>
       </div>
       <div class="flex items-center space-x-3 text-gray-400">
         <i class="fas fa-ellipsis-v"></i>
       </div>
     </div>
 
-    <div class="border-b border-gray-300 p-4"></div>
+    <div class="border-b border-gray-300 p-3"></div>
+    <div></div>
 
     <div class="conversation">
       <div
         v-for="msg in messages"
         :key="msg.id"
-        :class="msg.sender"
+        :class="msg.senderType"
         class="messages"
       >
         <div v-if="msg.senderType === 'examiner'" class="message reply">
           <div class="avatar">U18</div>
-          <div class="text">{{ msg.text }}</div>
+          <div class="text student-bg">
+            {{ msg.text }}<br /><span
+              class="text-slate-400 float-right text-xs"
+              >{{
+                formatDistanceToNow(msg.timestamp, { addSuffix: true })
+              }}</span
+            >
+          </div>
         </div>
         <div v-else class="message">
-          <div class="avatar">PP</div>
-          <div class="text">{{ msg.text }}</div>
-          <span class="text-gray-400 text-sm">20 min</span>
+          <div class="avatar">{{ getInitials(msg.sender) }}</div>
+          <div class="text examiner-bg">
+            {{ msg.text }}<br /><span
+              class="text-gray-400 float-right text-xs"
+              >{{
+                formatDistanceToNow(msg.timestamp, { addSuffix: true })
+              }}</span
+            >
+          </div>
         </div>
       </div>
     </div>
-
-
 
     <div class="border-t border-gray-300 p-4">
       <div class="flex items-center space-x-3 text-gray-400">
@@ -46,7 +64,9 @@
           @keyup.enter="sendMessage"
           placeholder="Type a message..."
         />
-        <button @click="sendMessage">Send</button>
+        <button @click="sendMessage">
+          <i class="fas fa-paper-plane"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -57,9 +77,12 @@ import { watch, ref, onMounted, nextTick } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { defineProps } from "vue";
+import { formatDistanceToNow } from "date-fns";
 
 const props = defineProps({
   selectedStudentId: String,
+  selectedStudentName: String,
+  selectedStudentStatus: String,
 });
 
 const socket = io("http://localhost:3000");
@@ -67,6 +90,29 @@ const socket = io("http://localhost:3000");
 const messages = ref([]);
 const newMessage = ref("");
 const RoomId = ref("u18");
+const studentName = ref(props.selectedStudentName || "Anonymous");
+const status = ref(props.selectedStudentStatus || "offline");
+// const status = ref("offline");
+
+watch(
+  () => props.selectedStudentName,
+  (newName) => {
+    studentName.value = newName;
+  }
+);
+
+watch(
+  () => props.selectedStudentStatus,
+  (newStatus) => {
+    status.value = newStatus;
+  }
+);
+
+socket.on("userStatus", (userStatus) => {
+  if (props.selectedStudentId === userStatus.studentId) {
+    status.value = userStatus.status;
+  }
+});
 
 function leaveRoom(roomId) {
   if (roomId) {
@@ -80,13 +126,16 @@ watch(
   () => props.selectedStudentId,
   async (roomId, oldId) => {
     messages.value = []; // Clear messages when switching students
+    // localStorage.removeItem("selectedStudentName");
     const response = await axios.get(
       `http://localhost:3000/messages/${roomId}`
     ); //roomID
     messages.value = response.data;
     messages.value = messages.value.map((m) => ({
+      sender: m.sender,
       text: m.content,
       senderType: m.senderType,
+      timestamp: m.timestamp,
     }));
     console.log("messages loaded", messages.value);
     if (oldId) {
@@ -110,12 +159,22 @@ function sendMessage() {
       recipient: props.selectedStudentId,
       text: newMessage.value,
       senderType: "examiner",
+      timestamp: Date.now(),
     };
     socket.emit("message", message);
     // messages.value.push(message);
     newMessage.value = "";
     scrollToBottom();
   }
+}
+
+function getInitials(name) {
+  return name
+    .split(" ")
+    .map((word) => word[0]) // Take the first letter of each word
+    .join("") // Join the initials together
+    .substring(0, 2) // Take the first two initials only
+    .toUpperCase();
 }
 
 async function scrollToBottom() {
@@ -142,7 +201,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   padding: 10px;
-  background-color: #dae5e7;
+  background-color: #fbfbfb;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
   border-radius: 2px;
 }
@@ -187,11 +246,21 @@ onMounted(() => {
   margin: 0 10px;
 }
 
+.examiner-bg {
+  background-color: #c2ffc7;
+  box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.student-bg {
+  background-color: #f5f7f8;
+  box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.2);
+}
+
 .text {
-  background-color: #f1f1f1;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   max-width: 60%;
+  color: #16423c;
 }
 
 .input-area {
@@ -203,9 +272,11 @@ onMounted(() => {
 input {
   flex-grow: 1;
   padding: 10px;
-  border: none;
+  /* border: none; */
+  border: #e2ecea 1px solid;
   border-radius: 5px;
   margin-right: 10px;
+  color: #16423c;
   font-size: 1em;
 }
 

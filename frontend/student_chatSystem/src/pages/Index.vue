@@ -8,13 +8,17 @@
           <div class="message-bubble">{{ msg.text }}</div>
         </div>
       </div>
-      <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type a message..." />
+      <input
+        v-model="newMessage"
+        @keyup.enter="sendMessage"
+        placeholder="Type a message..."
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch, nextTick } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 
@@ -22,37 +26,45 @@ const socket = io("http://localhost:3000");
 
 const isChatOpen = ref(false);
 const messages = ref([]);
-const newMessage = ref('');
+const newMessage = ref("");
+const studentId = "student03";
 // const chatInitiated = ref(false);
 
 function toggleChat() {
   isChatOpen.value = !isChatOpen.value;
   if (messages.value.length === 0) {
-      setTimeout(() => {
-      messages.value.push({ text: 'Hi, How May I Help You?😎', senderType: 'examiner'}); 
+    setTimeout(() => {
+      messages.value.push({
+        text: "Hi, How May I Help You?😎",
+        senderType: "examiner",
+      });
     }, 1000);
   }
-  
 }
+
+socket.emit("userConnected", studentId);
 
 function sendMessage() {
   if (newMessage.value.trim()) {
-    const message = { room: "student06", 
-                      sender: "Rajesh", 
-                      sender_id: "student06", 
-                      recipient: "examiner01", 
-                      text: newMessage.value, 
-                      senderType: "student" };
-    socket.emit('message', message);
+    const message = {
+      room: studentId,
+      sender: "Nishu Sir",
+      sender_id: studentId,
+      recipient: "examiner01",
+      text: newMessage.value,
+      senderType: "student",
+      timestamp: Date.now(),
+    };
+    socket.emit("message", message);
     // messages.value.push(message);
-    newMessage.value = '';
+    newMessage.value = "";
     scrollToBottom();
   }
 }
 
 function scrollToBottom() {
   nextTick(() => {
-    const chatBody = document.querySelector('.chat-body');
+    const chatBody = document.querySelector(".chat-body");
     chatBody.scrollTop = chatBody.scrollHeight;
   });
 }
@@ -61,22 +73,22 @@ function scrollToBottom() {
 watch(messages, scrollToBottom);
 
 onMounted(() => {
-  socket.emit('joinRoom', 'student06');
-  socket.on('message', (data) => {
+  socket.emit("joinRoom", studentId);
+  socket.on("message", (data) => {
     messages.value.push(data);
   });
 });
 
-const fetchMessages = async(roomId) => {
+const fetchMessages = async (roomId) => {
   const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
-  messages.value = response.data.map(m => ({
+  messages.value = response.data.map((m) => ({
     id: m.id,
     text: m.content,
-    senderType: m.senderType  // Determine sender type based on sender_id
+    senderType: m.senderType, // Determine sender type based on sender_id
   }));
-}
+};
 
-fetchMessages("student06")
+fetchMessages(studentId);
 </script>
 
 <style scoped>

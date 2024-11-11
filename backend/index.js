@@ -48,7 +48,26 @@ app.get('/messages/:roomId', (req, res) => {
 });
 
 app.get('/students', (req, res) => {
-  const query = `SELECT DISTINCT sender_id, room_id, sender, senderType FROM messages WHERE senderType = 'student'`;
+  const query = `
+  SELECT 
+  m.sender_id,
+  m.room_id,
+  m.sender,
+  m.senderType,
+  m.content,
+  m.timestamp
+FROM messages m
+JOIN (
+  SELECT 
+    room_id,
+    MAX(timestamp) as latest_timestamp
+  FROM messages
+  WHERE senderType = 'student'
+  GROUP BY room_id
+) latest ON m.room_id = latest.room_id AND m.timestamp = latest.latest_timestamp
+WHERE m.senderType = 'student'
+ORDER BY m.timestamp DESC;
+`;
 
   db.query(query, (err, results) => {
     if (err) return res.status(500).send(err);
@@ -56,15 +75,22 @@ app.get('/students', (req, res) => {
   });
 });
 
+const connectedStudents = new Map();
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
+
+  // Track user on connection
+  socket.on('userConnected', (studentId) => {
+    connectedStudents.set(studentId, socket.id)
+    io.emit('userStatus', { studentId, status: 'online' });
+  });
 
   // Handle incoming messages
   socket.on('message', async (data) => {
     try {
       console.log(data);
-  
+
       await axios.post('http://localhost:3000/messages', {
         sender: data.sender,
         sender_id: data.sender_id,
@@ -73,17 +99,17 @@ io.on('connection', (socket) => {
         content: data.text,
         senderType: data.senderType,
       });
-  
+
       // Emit message to the specific room and notify of new student if applicable
       io.to(data.room).emit('message', data);
       io.emit('newStudent', data);
-  
+
       console.log("Sent message");
     } catch (error) {
       console.error('Error sending message:', error);
     }
   });
-  
+
 
   // Join a room based on user role or ID
   socket.on('joinRoom', (room) => {
@@ -99,7 +125,24 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+
+    let disconnectedStudentId = null; // Define a variable to hold the studentId
+
+    for (const [studentId, id] of connectedStudents.entries()) {
+      if (id === socket.id) {
+        connectedStudents.delete(studentId);
+        disconnectedStudentId = studentId; // Store the studentId
+        console.log(`User ${studentId} is offline`);
+        break; // Exit the loop once the student is found
+      }
+    }
+
+    // Check if a studentId was found and emit the event if so
+    if (disconnectedStudentId !== null) {
+      io.emit('userStatus', { studentId: disconnectedStudentId, status: 'offline' });
+    }
   });
+
 });
 
 server.listen(3000, () => {
