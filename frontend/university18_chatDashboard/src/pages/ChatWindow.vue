@@ -25,6 +25,7 @@
     <div></div>
 
     <div class="conversation">
+      <div class="image-background"></div>
       <div
         v-for="msg in messages"
         :key="msg.id"
@@ -209,6 +210,7 @@ onMounted(() => {
 .conversation {
   flex-grow: 1;
   display: flex;
+  background-image: url('https://i.ibb.co/g9CMZQZ/bg-doodle.png');
   flex-direction: column;
   padding: 10px;
   /* max-height: 300px; */
@@ -236,8 +238,8 @@ onMounted(() => {
 .avatar {
   background-color: #d4e95e;
   color: 0F3F05;
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   display: flex;
   align-items: center;

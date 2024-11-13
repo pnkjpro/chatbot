@@ -1,178 +1,369 @@
 <template>
-    <div class="min-h-screen bg-gray-900 text-gray-100">
-      <!-- Header -->
-      <header class="p-4 border-b border-gray-800">
-        <div class="flex items-center justify-between">
-          <!-- Left section -->
-          <div class="flex items-center space-x-4">
-            <!-- Search -->
-            <div class="relative">
-              <input 
-                type="text" 
-                placeholder="Search" 
-                class="bg-gray-800 rounded-md pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-700"
-              >
-              <span class="absolute left-3 top-2.5 text-gray-400">
-                <i class="fas fa-search"></i>
-              </span>
-            </div>
-            
-            <!-- Sort -->
-            <div class="flex items-center space-x-2">
-              <span class="text-sm">Sort by: Date</span>
-              <i class="fas fa-chevron-down text-xs"></i>
-            </div>
+  <div class="flex flex-col h-screen bg-gray-100">
+    <!-- Header -->
+    <header class="bg-[#f0f2f5] px-4 py-0 flex items-center justify-between border-b border-[#d1d1d1]">
+      <div class="flex items-center space-x-2">
+        <button class="lg:hidden p-2 hover:bg-gray-200 rounded-full" @click="toggleSidebar">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+          </svg>
+        </button>
+        <div class="w-20 h-20">
+          <img src="/src/assets/image/logo.png" alt="U18 Chat" class="w-full h-full object-contain" />
+        </div>
+        <h1 class="text-lg font-semibold hidden sm:block">U18 Chat</h1>
+      </div>
+      
+      <div v-if="selectedStudent.name.length > 0" class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white">
+            {{ selectedStudent.name[0] || "S" }}
           </div>
-  
-          <!-- Right section -->
-          <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2">
-              <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                <span class="text-sm">{{ userInitials }}</span>
-              </div>
-              <span>{{ currentUser.name }}</span>
-              <div class="w-2 h-2 rounded-full bg-green-500"></div>
-            </div>
-            <div class="flex items-center space-x-3 text-gray-400">
-              <i class="fas fa-cog"></i>
-              <i class="fas fa-bell"></i>
-              <i class="fas fa-ellipsis-v"></i>
-            </div>
+          <div class="hidden sm:flex flex-col">
+            <span class="text-sm font-medium"> {{ selectedStudent.name || "Anonymous Student" }}</span>
+            <span class="text-xs text-green-500">{{  selectedStudent.status  || "offline" }}</span>
           </div>
         </div>
-      </header>
-  
-      <!-- Chat Area -->
-      <div class="flex-1 overflow-y-auto">
-        <div class="p-4 space-y-6">
-          <div v-for="message in messages" :key="message.id" class="flex items-start space-x-4">
-            <!-- Avatar -->
-            <div class="relative">
-              <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-                <span class="text-sm">{{ getInitials(message.user) }}</span>
-              </div>
-              <div v-if="message.online" class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-gray-900"></div>
-            </div>
-  
-            <!-- Message Content -->
-            <div class="flex-1">
-              <div class="flex items-baseline space-x-2">
-                <span class="font-medium">{{ message.user }}</span>
-                <span class="text-gray-400 text-sm">{{ message.time }}</span>
-              </div>
-              <p class="mt-1 text-gray-300">{{ message.message }}</p>
-            </div>
-  
-            <!-- Attachments if any -->
-            <div v-if="message.attachments" class="flex items-center space-x-2">
-              <div v-for="attachment in message.attachments" :key="attachment.id" 
-                   class="bg-gray-800 rounded p-2 flex items-center space-x-2">
-                <i class="fas fa-file"></i>
-                <div>
-                  <p class="text-sm">{{ attachment.name }}</p>
-                  <p class="text-xs text-gray-400">{{ attachment.size }}</p>
-                </div>
-              </div>
-            </div>
+        <!-- Three dots menu -->
+        <div class="relative">
+          <button class="p-2 hover:bg-gray-200 rounded-full" @click="toggleUserMenu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
+          <!-- Dropdown menu -->
+          <div v-if="isUserMenuOpen" 
+               class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg py-1 w-48 z-50">
+            <button @click="terminateSession" 
+                    class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>Terminate Session</span>
+            </button>
           </div>
         </div>
       </div>
-  
-      <!-- Input Area -->
-      <div class="border-t border-gray-800 p-4">
-        <div class="flex items-center space-x-4">
-          <input 
-            type="text" 
-            placeholder="Your Message..." 
-            class="flex-1 bg-gray-800 rounded-md px-4 py-2 focus:outline-none focus:ring-1 focus:ring-gray-700"
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden relative">
+      <!-- Sidebar overlay -->
+      <div v-if="isSidebarOpen" 
+           class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+           @click="toggleSidebar">
+      </div>
+
+      <!-- Sidebar -->
+      <div :class="[
+        'bg-[#ffffff] border-r border-[#d1d1d1] absolute lg:relative z-50',
+        'transition-transform duration-300 ease-in-out',
+        'w-80 lg:w-80 h-full',
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      ]">
+        <!-- Search -->
+        <div class="p-2">
+          <div class="bg-[#f0f2f5] flex items-center rounded-lg px-3 py-1.5">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              type="text" 
+              class="bg-transparent border-none focus:ring-0 flex-1 ml-2 text-[#9c9c9c]"
+              placeholder="Search"
+            />
+          </div>
+        </div>
+
+        <!-- Chat List -->
+        <!-- Chat List -->
+<div class="overflow-hidden">
+  <div v-for="student in students" 
+       :key="student.id" 
+       class="hover:bg-gray-100 px-3 py-2 cursor-pointer"
+       @click="selectStudent(student)">
+    <div class="flex items-center space-x-3">
+      <div class="relative flex-shrink-0">
+        <div :class="[
+          'w-2 h-2 rounded-full absolute -right-0.5 -top-0.5',
+          student.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
+        ]"></div>
+        <div class="w-10 h-10 font-semibold rounded-full bg-emerald-500 flex items-center justify-center text-white">
+          {{ student.name[0] }}
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between">
+          <span class="font-medium truncate">{{ student.name }}</span>
+          <span :class="[
+            'px-1 py-0.5 text-xs font-semibold rounded-lg',
+            student.status === 'online' ? 'bg-green-100 text-green-700 font-bold' : 'bg-gray-200 text-gray-600'
+          ]">
+            {{ student.username }}
+          </span>
+          <span class="text-xs text-gray-500 flex-shrink-0 ml-2">{{ formatDistanceToNow(student.timestamp, { addSuffix: true }) }}</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-sm text-gray-500 truncate block">{{ student.message }}</span>
+          <div v-if="student.unread" 
+               class="ml-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+            {{ student.unread }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+      </div>
+
+      <!-- Chat Area -->
+      <div v-if="selectedStudent.name && selectedStudent.name.length > 0"
+        class="flex-1 flex flex-col bg-[#f0f2f5] chat-bgImage">
+        <!-- Messages -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <div v-for="message in messages" 
+               :key="message.id" 
+               :class="[
+                 'flex items-start space-x-2 mb-4',
+                 message.senderType === 'examiner' ? 'flex-row-reverse space-x-reverse' : ''
+               ]">
+            <!-- Avatar -->
+            <div class="w-8 h-8 rounded-full bg-emerald-500 flex-shrink-0 flex items-center justify-center text-white">
+              {{ message.senderType === "examiner" ? "U" : message.sender[0] }}
+            </div>
+            <!-- Message content -->
+            <div :class="[
+              'max-w-[70%]'
+            ]">
+              <div :class="[
+                'rounded-lg px-4 py-2',
+                message.senderType === 'examiner' ? 'bg-emerald-500 text-white' : 'bg-white'
+              ]">
+                {{ message.message }}
+              </div>
+              <div :class="[
+                'text-xs text-gray-500 mt-1',
+                message.sent ? 'text-right' : ''
+              ]">
+                {{ formatDistanceToNow(message.timestamp, { addSuffix: true }) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-[#ffffff] p-4 border-t border-[#d1d1d1]">
+          <div class="flex items-center space-x-2">
+            <!-- File upload button -->
+            <label class="cursor-pointer p-2 hover:bg-gray-100 rounded-full">
+              <input type="file" class="hidden" @change="handleFileUpload" />
+              <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </label>
+            
+            <input 
             v-model="newMessage"
-          >
-          <div class="flex items-center space-x-3 text-gray-400">
-            <i class="fas fa-paperclip cursor-pointer"></i>
-            <i class="fas fa-microphone cursor-pointer"></i>
-            <button 
-              class="bg-blue-600 text-white rounded-md px-4 py-2 hover:bg-blue-700 focus:outline-none"
-              @click="sendMessage"
-            >
-              <i class="fas fa-paper-plane"></i>
+            @keyup.enter="sendMessage" 
+              class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              placeholder="Type a message..."
+            />
+            
+            <button @click="sendMessage" class="bg-emerald-500 text-white rounded-full p-2 hover:bg-emerald-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
             </button>
           </div>
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'ChatDashboard',
-    data() {
-      return {
-        currentUser: {
-          name: 'Joan Bates',
-          online: true
-        },
-        newMessage: '',
-        messages: [
-          {
-            id: 1,
-            user: 'Elaine Day',
-            message: 'The arts play a large role in the experience of inner thoughts and beauty in my life, the arts...',
-            time: '20 min',
-            online: true
-          },
-          {
-            id: 2,
-            user: 'Joan Bates',
-            message: 'Hello there,\nI am writing to introduce you to your david boyd',
-            time: '20 min',
-            online: true
-          },
-          {
-            id: 3,
-            user: 'David Palmer',
-            message: 'We use the Arts as a means of touching that part of us that we cannot reach with',
-            time: '20 min',
-            online: true,
-            attachments: [
-              {
-                id: 1,
-                name: 'Documentation.pdf',
-                size: '5.01 kb'
-              }
-            ]
-          }
-        ]
-      }
-    },
-    computed: {
-      userInitials() {
-        return this.getInitials(this.currentUser.name)
-      }
-    },
-    methods: {
-      getInitials(name) {
-        return name.split(' ').map(n => n[0]).join('')
-      },
-      sendMessage() {
-        if (!this.newMessage.trim()) return
-        
-        this.messages.push({
-          id: this.messages.length + 1,
-          user: this.currentUser.name,
-          message: this.newMessage,
-          time: 'Just now',
-          online: true
-        })
-        
-        this.newMessage = ''
-      }
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, onMounted, defineEmits } from 'vue';
+import { io } from "socket.io-client";
+import axios from "axios";
+import { formatDistanceToNow } from "date-fns";
+import { useToast } from 'vue-toastification';
+
+
+//-------------------------- Initial Variables ------------------------
+let toast = useToast();
+const students = ref([]);
+const messages = ref([]);
+const newMessage = ref("");
+const selectedStudent = ref({
+  id: null,
+  name: "",
+  username: "",
+  content: "",
+  timestamp: null,
+  status: "offline",
+  unread: 0,
+});
+
+
+// Initialise socket.io client
+const socket = io("http://localhost:3000");
+
+// Receive events when a new student joins
+socket.on("newStudent", (data) => {
+  const existingStudent = students.value.find((s) => s.id === data.room_id);
+  // even if the student in the loop variable is different from existingStudent, since both reference the same underlying object in students.value, modifying existingStudent.content will automatically update student.content in the loop because the object is the same. Vue detects changes to the object and updates the UI accordingly
+
+  if (existingStudent) {
+    existingStudent.message = data.message;
+    existingStudent.timestamp = data.timestamp;
+  } else {
+    students.value.push({
+      id: data.room_id,
+      name: data.sender,
+      username: data.sender_id,
+      message: data.message,
+      timestamp: data.timestamp,
+      status: "offline",
+      unread: 7, //do something with this
+    });
+  }
+})
+
+// Receive events when a student is online/offline
+socket.on("userStatus", (studentStatus) => {
+  const existingStudent = students.value.find(
+    (s) => s.username === studentStatus.studentId
+  );
+  existingStudent.status = studentStatus.status;
+});
+
+
+
+// ===================== Conversation Window starts here ===================== 
+//handle student selection
+const selectStudent = (student) => {
+  if (window.innerWidth < 1024) {
+    isSidebarOpen.value = false
+  }
+  selectedStudent.value = student;
+}
+
+function leaveRoom(roomId) {
+  if (roomId) {
+    socket.emit("leaveRoom", roomId);
+    console.log("Left Room", roomId);
+  }
+}
+
+watch(()=> selectedStudent.value.id, 
+async (roomId, oldId) => {
+    messages.value = []; // Clear messages when switching students
+    const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
+    messages.value = JSON.parse(response.data[0].content);
+
+    if (oldId) {
+      console.log("Old Student Id", oldId);
+      leaveRoom(oldId);
     }
+    if (roomId) {
+      socket.emit("joinRoom", roomId);
+      console.log("Joined Room", roomId);
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+socket.on("message", (data) => {
+  console.log("Message Structure on Emit", data)
+    messages.value.push(data);
+    scrollToBottom();
+  });
+
+function sendMessage() {
+  if (newMessage.value.trim()) {
+    const message = {
+      room_id: selectedStudent.value.id,
+      sender: "Gunjan",
+      sender_id: "examiner01",
+      recipient_id: selectedStudent.value.id,
+      message: newMessage.value,
+      senderType: "examiner",
+      timestamp: Date.now(),
+    };
+    socket.emit("message", message);
+    // messages.value.push(message);
+    newMessage.value = "";
+    scrollToBottom();
   }
-  </script>
-  
-  <style scoped>
-  /* Add any additional custom styles here */
-  .min-h-screen {
-    min-height: 100vh;
-  }
-  </style>
+}
+
+// async function scrollToBottom() {
+//   await nextTick();
+//   const messagesContainer = document.querySelector(".conversation");
+//   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+// }
+
+// // Auto-scroll when a new message arrives
+// watch(messages, scrollToBottom);
+
+
+
+//============= fetch students data from the server ============
+onMounted(()=> {
+  axios.get("http://localhost:3000/students")
+  .then((response)=>{
+    students.value = JSON.parse(JSON.stringify(response.data));
+
+    students.value = students.value.map((student) => {
+      const parsedContent = JSON.parse(student.content);
+      return {
+        id: student.room_id, // student_username = room_id = student_id
+        name: student.student_name,
+        username: student.room_id,
+        message: parsedContent[parsedContent.length - 1].message,
+        timestamp: parsedContent[parsedContent.length - 1].timestamp,
+        status: "offline",
+        unread: 3, // do something with this
+      }
+    })
+
+    console.log("Students fetched successfully", students.value);
+  })
+  .catch((error)=>{
+    console.error("Error fetching students data", error);
+  })
+});
+
+
+const isSidebarOpen = ref(false)
+const isUserMenuOpen = ref(false)
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value
+  if (isSidebarOpen.value) isUserMenuOpen.value = false
+}
+
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value
+  if (isUserMenuOpen.value) isSidebarOpen.value = false
+}
+
+const terminateSession = () => {
+  // Handle session termination
+  isUserMenuOpen.value = false
+}
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0]
+  toast.error("File Upload function is not available as of now.")
+  // Handle file upload logic
+  console.log('File selected:', file)
+}
+</script>
+
+<style scoped>
+.chat-bgImage {
+  background-image: url('https://i.ibb.co/g9CMZQZ/bg-doodle.png');
+}
+</style>

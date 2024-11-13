@@ -108,7 +108,7 @@ onMounted(() => {
   text-align: center;
   background-color: #fafad7;
   border-radius: 4px;
-  color: #0b033e;
+  color: #62825D;
   margin: 10px 0;
   box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3);
 }
@@ -153,6 +153,7 @@ onMounted(() => {
 
 .offline {
   background-color: #a6aebf;
+  border: 2px solid #283333;
 }
 
 .text-clamp {

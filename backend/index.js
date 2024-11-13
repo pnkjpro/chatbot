@@ -26,19 +26,69 @@ const io = new Server(server, {
   }
 });
 
+// app.post('/messages', (req, res) => {
+//   const { sender, sender_id, recipient_id, room_id, content, senderType } = req.body;
+//   const query = `INSERT INTO messages (sender, sender_id, recipient_id, room_id, content, senderType) VALUES (?, ?, ?, ?, ?, ?)`;
+//   db.query(query, [sender, sender_id, recipient_id, room_id, content, senderType], (err, result) => {
+//     if (err) return res.status(500).send(err);
+//     res.status(200).send({ message: 'Message saved' });
+//   });
+// });
+
 app.post('/messages', (req, res) => {
-  const { sender, sender_id, recipient_id, room_id, content, senderType } = req.body;
-  const query = `INSERT INTO messages (sender, sender_id, recipient_id, room_id, content, senderType) VALUES (?, ?, ?, ?, ?, ?)`;
-  db.query(query, [sender, sender_id, recipient_id, room_id, content, senderType], (err, result) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).send({ message: 'Message saved' });
+  const { sender, sender_id, recipient_id, room_id, message, senderType, timestamp } = req.body;
+
+  const selectQuery = `SELECT content FROM messages WHERE room_id = ? LIMIT 1`;
+  db.query(selectQuery, [room_id], (err, results) => {
+    if (err) return res.status(500).send({ error: 'Database query failed', details: err });
+
+    let conversation = [];
+    if (results.length > 0 && results[0].content){
+      conversation = JSON.parse(results[0].content);
+    }
+
+    conversation.push({
+      sender,
+      sender_id,
+      recipient_id,
+      message,
+      senderType,
+      timestamp,
+    })
+
+    //convert updated conversation to JSON and upsert it back into the database
+    if(senderType === "student"){ //to update student_name
+      const upsertQuery = `
+    INSERT INTO messages (room_id, student_name, content)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE content = VALUES(content)
+    `;
+
+    db.query(upsertQuery, [room_id, sender, JSON.stringify(conversation)], (err, result) => {
+      if (err) return res.status(500).send({ error: 'Database update failed', details: err });
+      res.status(200).send({ message: 'Message saved' });
+    });
+    } else {
+      const upsertQuery = `
+    INSERT INTO messages (room_id, content)
+    VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE content = VALUES(content)
+    `;
+
+    db.query(upsertQuery, [room_id, JSON.stringify(conversation)], (err, result) => {
+      if (err) return res.status(500).send({ error: 'Database update failed', details: err });
+      res.status(200).send({ message: 'Message saved' });
+    });
+    }
+
+
   });
-});
+})
 
 // Define a route to retrieve messages for a specific room
 app.get('/messages/:roomId', (req, res) => {
   const { roomId } = req.params;
-  const query = `SELECT * FROM messages WHERE room_id = ? ORDER BY timestamp`;
+  const query = `SELECT * FROM messages WHERE room_id = ?`;
   db.query(query, [roomId], (err, results) => {
     if (err) {
       return res.status(500).send({ error: 'Database query failed', details: err });
@@ -48,26 +98,8 @@ app.get('/messages/:roomId', (req, res) => {
 });
 
 app.get('/students', (req, res) => {
-  const query = `
-  SELECT 
-  m.sender_id,
-  m.room_id,
-  m.sender,
-  m.senderType,
-  m.content,
-  m.timestamp
-FROM messages m
-JOIN (
-  SELECT 
-    room_id,
-    MAX(timestamp) as latest_timestamp
-  FROM messages
-  WHERE senderType = 'student'
-  GROUP BY room_id
-) latest ON m.room_id = latest.room_id AND m.timestamp = latest.latest_timestamp
-WHERE m.senderType = 'student'
-ORDER BY m.timestamp DESC;
-`;
+  const query = `SELECT room_id, student_name, content FROM messages`;
+
 
   db.query(query, (err, results) => {
     if (err) return res.status(500).send(err);
@@ -86,22 +118,23 @@ io.on('connection', (socket) => {
     io.emit('userStatus', { studentId, status: 'online' });
   });
 
-  // Handle incoming messages
+  //Handle incoming messages
   socket.on('message', async (data) => {
     try {
       console.log(data);
 
       await axios.post('http://localhost:3000/messages', {
+        room_id: data.room_id,
         sender: data.sender,
         sender_id: data.sender_id,
-        recipient_id: data.recipient, // Adjust according to the role or ID structure
-        room_id: data.room,
-        content: data.text,
+        recipient_id: data.recipient_id, // Adjust according to the role or ID structure
+        message: data.message,
         senderType: data.senderType,
+        timestamp: data.timestamp,
       });
 
       // Emit message to the specific room and notify of new student if applicable
-      io.to(data.room).emit('message', data);
+      io.to(data.room_id).emit('message', data);
       io.emit('newStudent', data);
 
       console.log("Sent message");
@@ -109,6 +142,10 @@ io.on('connection', (socket) => {
       console.error('Error sending message:', error);
     }
   });
+
+
+
+
 
 
   // Join a room based on user role or ID

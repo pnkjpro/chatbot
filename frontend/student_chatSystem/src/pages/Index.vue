@@ -5,7 +5,7 @@
       <div class="chat-header">Chat with Examiner</div>
       <div class="chat-body" ref="chatBody">
         <div v-for="msg in messages" :key="msg.id" :class="msg.senderType">
-          <div class="message-bubble">{{ msg.text }}</div>
+          <div class="message-bubble">{{ msg.message }}</div>
         </div>
       </div>
       <input
@@ -27,7 +27,7 @@ const socket = io("http://localhost:3000");
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
-const studentId = "student03";
+const studentId = "student08";
 // const chatInitiated = ref(false);
 
 function toggleChat() {
@@ -35,7 +35,7 @@ function toggleChat() {
   if (messages.value.length === 0) {
     setTimeout(() => {
       messages.value.push({
-        text: "Hi, How May I Help You?😎",
+        message: "Hi, How May I Help You?😎",
         senderType: "examiner",
       });
     }, 1000);
@@ -47,15 +47,16 @@ socket.emit("userConnected", studentId);
 function sendMessage() {
   if (newMessage.value.trim()) {
     const message = {
-      room: studentId,
-      sender: "Nishu Sir",
+      room_id: studentId,
+      sender: "Aanchal",
       sender_id: studentId,
-      recipient: "examiner01",
-      text: newMessage.value,
+      recipient_id: "examiner01",
+      message: newMessage.value,
       senderType: "student",
       timestamp: Date.now(),
     };
     socket.emit("message", message);
+    socket.emit("userConnected", studentId);
     // messages.value.push(message);
     newMessage.value = "";
     scrollToBottom();
@@ -80,12 +81,15 @@ onMounted(() => {
 });
 
 const fetchMessages = async (roomId) => {
+  // const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
+  // messages.value = response.data.map((m) => ({
+  //   id: m.id,
+  //   text: m.content,
+  //   senderType: m.senderType, // Determine sender type based on sender_id
+  // }));
+
   const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
-  messages.value = response.data.map((m) => ({
-    id: m.id,
-    text: m.content,
-    senderType: m.senderType, // Determine sender type based on sender_id
-  }));
+  messages.value = JSON.parse(response.data[0].content);
 };
 
 fetchMessages(studentId);
