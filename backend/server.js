@@ -4,14 +4,14 @@ const http = require('http');
 const axios = require('axios');
 const { Server } = require('socket.io');
 const cors = require('cors'); // Import the cors package
-const db = require('./config/db');
+const db = require('./config/serverdb.js');
 
 const app = express();
 app.use(express.json());
 
 // Apply CORS middleware globally
 app.use(cors({
-  origin: ["http://localhost:3001", "http://localhost:3002"], // Allow requests from these origins
+  origin: ["http://localhost:3001", "http://localhost:3002", "https://localhost"], // Allow requests from these origins
   methods: ["GET", "POST"], // Allowed methods
   allowedHeaders: ["Content-Type", "Authorization"], // Add necessary headers
   credentials: true // Set to true if you need to send cookies or authentication data
@@ -20,7 +20,7 @@ app.use(cors({
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3001", "http://localhost:3002"],
+    origin: ["http://localhost:3001", "http://localhost:3002", "https://localhost"],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,  // Add this
@@ -61,7 +61,7 @@ app.post('/messages', (req, res) => {
       const upsertQuery = `
     INSERT INTO messages (room_id, student_name, student_username, content)
     VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE 
+    ON DUPLICATE KEY UPDATE
         content = VALUES(content),
         student_name = COALESCE(student_name, VALUES(student_name)),
         student_username = COALESCE(student_username, VALUES(student_username))
@@ -75,7 +75,7 @@ app.post('/messages', (req, res) => {
       const upsertQuery = `
     INSERT INTO messages (room_id, examiner_name, examiner_username, content)
     VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE 
+    ON DUPLICATE KEY UPDATE
         content = VALUES(content),
         examiner_name = COALESCE(examiner_name, VALUES(examiner_name)),
         examiner_username = COALESCE(examiner_username, VALUES(examiner_username))

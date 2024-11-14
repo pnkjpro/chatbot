@@ -289,6 +289,7 @@ function sendMessage() {
       recipient_id: selectedStudent.value.id,
       message: newMessage.value,
       senderType: "examiner",
+      read_status: "unread",
       timestamp: Date.now(),
     };
     socket.emit("message", message);

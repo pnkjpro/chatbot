@@ -19,10 +19,11 @@
           <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white">
             {{ selectedStudent.name[0] || "S" }}
           </div>
-          <div class="hidden sm:flex flex-col">
-            <span class="text-sm font-medium"> {{ selectedStudent.name || "Anonymous Student" }}</span>
-            <span class="text-xs text-green-500">{{  selectedStudent.status  || "offline" }}</span>
-          </div>
+        <div class="sm:flex flex-col">
+          <span class="text-sm font-medium sm:inline hidden">{{ selectedStudent.name || "Anonymous Student" }}</span>
+          <span class="text-sm sm:text-xs text-green-500">{{ selectedStudent.status || "offline" }}</span>
+        </div>
+
         </div>
         <!-- Three dots menu -->
         <div class="relative">
@@ -121,7 +122,7 @@
       <div v-if="selectedStudent.name && selectedStudent.name.length > 0"
         class="flex-1 flex flex-col bg-[#f0f2f5] chat-bgImage">
         <!-- Messages -->
-        <div class="flex-1 overflow-y-auto p-4">
+        <div class="flex-1 overflow-y-auto p-4 messages-container">
           <div v-for="message in messages" 
                :key="message.id" 
                :class="[
@@ -183,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, defineEmits } from 'vue';
+import { ref, watch, onMounted, defineEmits, nextTick } from 'vue';
 import { io } from "socket.io-client";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
@@ -207,7 +208,15 @@ const selectedStudent = ref({
 
 
 // Initialise socket.io client
-const socket = io("https://socket.everitas.in");
+const socket = io("https://socket.everitas.in", {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    withCredentials: true,
+    extraHeaders: {
+        "Access-Control-Allow-Origin": "*"
+    }
+});
 
 // Receive events when a new student joins
 socket.on("newStudent", (data) => {
@@ -298,14 +307,14 @@ function sendMessage() {
   }
 }
 
-// async function scrollToBottom() {
-//   await nextTick();
-//   const messagesContainer = document.querySelector(".conversation");
-//   messagesContainer.scrollTop = messagesContainer.scrollHeight;
-// }
+async function scrollToBottom() {
+  await nextTick();
+  const messagesContainer = document.querySelector(".messages-container");
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
-// // Auto-scroll when a new message arrives
-// watch(messages, scrollToBottom);
+// Auto-scroll when a new message arrives
+watch(messages, scrollToBottom);
 
 
 

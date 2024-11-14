@@ -22,12 +22,15 @@ import { ref, onMounted, watch, nextTick } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 
+// Initialise socket.io client
 const socket = io("https://socket.everitas.in", {
-  withCredentials: true,
-  transports: ['websocket', 'polling'],
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    withCredentials: true,
+    extraHeaders: {
+        "Access-Control-Allow-Origin": "*"
+    }
 });
 
 const isChatOpen = ref(false);

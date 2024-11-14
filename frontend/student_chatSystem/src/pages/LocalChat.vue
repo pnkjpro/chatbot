@@ -53,6 +53,7 @@ function sendMessage() {
       recipient_id: "examiner01",
       message: newMessage.value,
       senderType: "student",
+      read_status: "unread",
       timestamp: Date.now(),
     };
     socket.emit("message", message);
