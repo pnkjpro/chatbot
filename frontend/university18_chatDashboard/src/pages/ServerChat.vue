@@ -207,7 +207,7 @@ const selectedStudent = ref({
 
 
 // Initialise socket.io client
-const socket = io("http://localhost:3000");
+const socket = io("https://socket.everitas.in");
 
 // Receive events when a new student joins
 socket.on("newStudent", (data) => {
@@ -259,7 +259,7 @@ function leaveRoom(roomId) {
 watch(()=> selectedStudent.value.id, 
 async (roomId, oldId) => {
     messages.value = []; // Clear messages when switching students
-    const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
+    const response = await axios.get(`https://socket.everitas.in/messages/${roomId}`); //roomID
     messages.value = JSON.parse(response.data[0].content);
 
     if (oldId) {
@@ -311,7 +311,7 @@ function sendMessage() {
 
 //============= fetch students data from the server ============
 onMounted(()=> {
-  axios.get("http://localhost:3000/students")
+  axios.get("https://socket.everitas.in/students")
   .then((response)=>{
     students.value = JSON.parse(JSON.stringify(response.data));
 

@@ -4,20 +4,15 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      name: 'Dashboard',
-      component: () => import('../pages/ChatDashboard.vue'),
+      path: '/local',
+      name: 'Local Chat',
+      component: () => import('../pages/LocalChat.vue'),
     },
     {
-      path: '/ui',
-      name: 'UI',
-      component: () => import('../pages/CheckingUi.vue'),
+      path: '/server',
+      name: 'Server Chat',
+      component: () => import('../pages/ServerChat.vue'),
     }
-    // {
-    //   path: '/dashboard',
-    //   name: 'Dashboard',
-    //   component: () => import('../pages/ChatDashboard.vue'),
-    // },
   ],
 })
 

@@ -20,11 +20,20 @@ app.use(cors({
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3001", "http://localhost:3002"], // Allow both apps
+    origin: ["http://localhost:3001", "http://localhost:3002"],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  }
+    credentials: true,  // Add this
+  },
+  transports: ['websocket', 'polling'],  // Add this
+  pingTimeout: 60000,   // Add this
+  pingInterval: 25000   // Add this
 });
+
+app.get('/check', (req, res) => {
+console.log("node script is running successfully!");
+return res.status(200).send({message: 'node script is running successfully!'});
+})
 
 app.post('/messages', (req, res) => {
   const { sender, sender_id, recipient_id, room_id, message, senderType, timestamp } = req.body;
@@ -120,7 +129,7 @@ io.on('connection', (socket) => {
     try {
       console.log(data);
 
-      await axios.post('http://localhost:3000/messages', {
+      await axios.post('http://localhost:3008/messages', {
         room_id: data.room_id,
         sender: data.sender,
         sender_id: data.sender_id,
@@ -139,11 +148,6 @@ io.on('connection', (socket) => {
       console.error('Error sending message:', error);
     }
   });
-
-
-
-
-
 
   // Join a room based on user role or ID
   socket.on('joinRoom', (room) => {
@@ -179,6 +183,6 @@ io.on('connection', (socket) => {
 
 });
 
-server.listen(3000, () => {
-  console.log('Socket.IO server is running on port 3000');
+server.listen(3008, '0.0.0.0', () => {
+  console.log('Socket.IO server is running on port 3008');
 });
