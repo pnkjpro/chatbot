@@ -88,24 +88,15 @@ import { ref, onMounted, watch, nextTick } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-// Initialise socket.io client
-const socket = io("https://socket.everitas.in", {
-    transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    withCredentials: true,
-    extraHeaders: {
-        "Access-Control-Allow-Origin": "*"
-    }
-});
+const appUrl = "https://socket.everitas.in";
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
 const student = {
-  id: "student09",
-  name: "Aman",
-  username: "student09",
-  examination_id: "mba202402student09",
+  id: "student08",
+  name: "Anchal",
+  username: "student08",
+  examination_id: "mba202402student08",
 }
 
 function toggleChat() {
@@ -119,6 +110,17 @@ function toggleChat() {
     }, 1000);
   }
 }
+
+// Initialise socket.io client
+const socket = io(`${appUrl}`, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    withCredentials: true,
+    extraHeaders: {
+        "Access-Control-Allow-Origin": "*"
+    }
+});
 
 socket.emit("userConnected", student.examination_id);
 
@@ -161,7 +163,7 @@ onMounted(() => {
 });
 
 const fetchMessages = async (roomId) => {
-  const response = await axios.get(`https://socket.everitas.in/messages/${roomId}`); //roomID
+  const response = await axios.get(`${appUrl}/messages/${roomId}`); //roomID
   messages.value = JSON.parse(response.data[0].content);
 };
 

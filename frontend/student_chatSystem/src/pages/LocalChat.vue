@@ -88,8 +88,8 @@ import { ref, onMounted, watch, nextTick } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const socket = io("http://localhost:3008");
 
+const appUrl = "http://localhost:3008";
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
@@ -111,6 +111,8 @@ function toggleChat() {
     }, 1000);
   }
 }
+
+const socket = io(`${appUrl}`);
 
 socket.emit("userConnected", student.examination_id);
 
@@ -153,7 +155,7 @@ onMounted(() => {
 });
 
 const fetchMessages = async (roomId) => {
-  const response = await axios.get(`http://localhost:3008/messages/${roomId}`); //roomID
+  const response = await axios.get(`${appUrl}/messages/${roomId}`); //roomID
   messages.value = JSON.parse(response.data[0].content);
 };
 

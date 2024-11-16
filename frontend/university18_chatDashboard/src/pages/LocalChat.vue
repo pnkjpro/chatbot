@@ -34,7 +34,7 @@
           <!-- Dropdown menu -->
           <div v-if="isUserMenuOpen" 
                class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg py-1 w-48 z-50">
-            <button @click="terminateSession" 
+            <button @click="terminateSession(selectedStudent.examination_id)" 
                     class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -69,6 +69,7 @@
             </svg>
             <input 
               type="text" 
+              v-model="searchQuery"
               class="bg-transparent border-none focus:ring-0 flex-1 ml-2 text-[#9c9c9c]"
               placeholder="Search"
             />
@@ -78,7 +79,7 @@
         <!-- Chat List -->
         <!-- Chat List -->
 <div class="overflow-hidden">
-  <div v-for="student in students" 
+  <div v-for="student in (filteredStudents.length > 0 ? filteredStudents : students)" 
        :key="student.id" 
        class="hover:bg-gray-100 px-3 py-2 cursor-pointer"
        @click="selectStudent(student)">
@@ -191,10 +192,12 @@ import { useToast } from 'vue-toastification';
 
 
 //-------------------------- Initial Variables ------------------------
+const appUrl = "http://localhost:3008";
 let toast = useToast();
 const students = ref([]);
 const messages = ref([]);
 const newMessage = ref("");
+const searchQuery = ref("");
 const selectedStudent = ref({
   id: null,
   name: "",
@@ -206,9 +209,11 @@ const selectedStudent = ref({
   unread: 0,
 });
 
+const filteredStudents = ref([]);
+
 
 // Initialise socket.io client
-const socket = io("http://localhost:3008");
+const socket = io(`${appUrl}`);
 
 // Receive events when a new student joins
 socket.on("newStudent", (data) => {
@@ -262,7 +267,7 @@ watch(()=> selectedStudent.value.examination_id,
 async (roomId, oldId) => {
   console.log("selectedStudent", selectedStudent.value);
     messages.value = []; // Clear messages when switching students
-    const response = await axios.get(`http://localhost:3008/messages/${roomId}`); //roomID
+    const response = await axios.get(`${appUrl}/messages/${roomId}`); //roomID
     messages.value = JSON.parse(response.data[0].content);
 
     if (oldId) {
@@ -302,6 +307,22 @@ function sendMessage() {
   }
 }
 
+//=================== search and filter =================
+function filterStudents(searchTerm) {
+  filteredStudents.value = students.value.filter(student => {
+    return (
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.examination_id.toString().includes(searchTerm)
+    );
+  });
+  return filteredStudents;
+}
+
+watch(()=>searchQuery.value, (newSearchQuery)=>{
+  console.log(filterStudents(newSearchQuery));
+})
+
+//=================== Scroll to Bottom =================
 async function scrollToBottom() {
   await nextTick();
   const messagesContainer = document.querySelector(".messages-container");
@@ -315,7 +336,7 @@ watch(messages, scrollToBottom);
 
 //============= fetch students data from the server ============
 onMounted(()=> {
-  axios.get("http://localhost:3008/students")
+  axios.get(`${appUrl}/students`)
   .then((response)=>{
     students.value = JSON.parse(JSON.stringify(response.data));
 
@@ -354,11 +375,11 @@ const toggleUserMenu = () => {
   if (isUserMenuOpen.value) isSidebarOpen.value = false
 }
 
-const terminateSession = () => {
-  // Handle session termination
-  axios.post(`http://localhost:3008/terminateSession/${sessionId}`)
+const terminateSession = (sessionId) => {
+  axios.get(`${appUrl}/terminateSession/${sessionId}`)
   .then((response) => {
     console.log("Session terminated successfully", response.data);
+    window.location.reload();
   })
   .catch((error) => {
     console.error("Error terminating session", error);

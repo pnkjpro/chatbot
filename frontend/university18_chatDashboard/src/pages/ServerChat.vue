@@ -78,7 +78,7 @@
         <!-- Chat List -->
         <!-- Chat List -->
 <div class="overflow-hidden">
-  <div v-for="student in students" 
+  <div v-for="student in (filteredStudents.length > 0 ? filteredStudents : students)"
        :key="student.id" 
        class="hover:bg-gray-100 px-3 py-2 cursor-pointer"
        @click="selectStudent(student)">
@@ -191,10 +191,12 @@ import { useToast } from 'vue-toastification';
 
 
 //-------------------------- Initial Variables ------------------------
+const appUrl = "https://socket.everitas.in";
 let toast = useToast();
 const students = ref([]);
 const messages = ref([]);
 const newMessage = ref("");
+const searchQuery = ref("");
 const selectedStudent = ref({
   id: null,
   name: "",
@@ -206,9 +208,10 @@ const selectedStudent = ref({
   unread: 0,
 });
 
+const filteredStudents = ref([]);
 
 // Initialise socket.io client
-const socket = io("https://socket.everitas.in", {
+const socket = io(`${appUrl}`, {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: 5,
@@ -270,7 +273,7 @@ watch(()=> selectedStudent.value.examination_id,
 async (roomId, oldId) => {
   console.log("selectedStudent", selectedStudent.value);
     messages.value = []; // Clear messages when switching students
-    const response = await axios.get(`https://socket.everitas.in/messages/${roomId}`); //roomID
+    const response = await axios.get(`${appUrl}/messages/${roomId}`); //roomID
     messages.value = JSON.parse(response.data[0].content);
 
     if (oldId) {
@@ -310,6 +313,21 @@ function sendMessage() {
   }
 }
 
+//=================== search and filter =================
+function filterStudents(searchTerm) {
+  filteredStudents.value = students.value.filter(student => {
+    return (
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.examination_id.toString().includes(searchTerm)
+    );
+  });
+  return filteredStudents;
+}
+
+watch(()=>searchQuery.value, (newSearchQuery)=>{
+  console.log(filterStudents(newSearchQuery));
+})
+
 async function scrollToBottom() {
   await nextTick();
   const messagesContainer = document.querySelector(".messages-container");
@@ -323,7 +341,7 @@ watch(messages, scrollToBottom);
 
 //============= fetch students data from the server ============
 onMounted(()=> {
-  axios.get("https://socket.everitas.in/students")
+  axios.get(`${appUrl}/students`)
   .then((response)=>{
     students.value = JSON.parse(JSON.stringify(response.data));
 
@@ -362,11 +380,11 @@ const toggleUserMenu = () => {
   if (isUserMenuOpen.value) isSidebarOpen.value = false
 }
 
-const terminateSession = () => {
-  // Handle session termination
-  axios.post(`https://socket.everitas.in/terminateSession/${sessionId}`)
+const terminateSession = (sessionId) => {
+  axios.get(`${appUrl}/terminateSession/${sessionId}`)
   .then((response) => {
     console.log("Session terminated successfully", response.data);
+    window.location.reload();
   })
   .catch((error) => {
     console.error("Error terminating session", error);
