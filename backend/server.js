@@ -146,10 +146,10 @@ app.get('/messages/:roomId', (req, res) => {
 });
 
 app.get('/students', (req, res) => {
-  const query = `SELECT room_id, student_name, student_username, content, session_id FROM messages`;
+  const query = `SELECT room_id, student_name, student_username, content, session_id FROM messages WHERE session_status = ?`;
 
 
-  db.query(query, (err, results) => {
+  db.query(query, ['active'], (err, results) => {
     if (err) return res.status(500).send(err);
     res.status(200).json(results);
   });
