@@ -157,7 +157,7 @@ app.get('/students', (req, res) => {
 
 app.get('/terminateSession/:sessionId', (req, res) => {
   const { sessionId } = req.params;
-  const query = `UPDATE INTO messages SET session_status = ? WHERE session_id = ?`
+  const query = `UPDATE messages SET session_status = ? WHERE session_id = ?`
   db.query(query, ['terminated', sessionId], (err, results) => {
     if (err) return res.status(500).send(err);
     res.status(200).json(results);
