@@ -102,10 +102,10 @@ const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
 const student = {
-  id: "student08",
-  name: "Aanchal",
-  username: "student08",
-  examination_id: "mba202402student08",
+  id: "student09",
+  name: "Aman",
+  username: "student09",
+  examination_id: "mba202402student09",
 }
 
 function toggleChat() {

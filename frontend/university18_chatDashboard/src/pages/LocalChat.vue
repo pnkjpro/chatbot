@@ -208,7 +208,7 @@ const selectedStudent = ref({
 
 
 // Initialise socket.io client
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:3008");
 
 // Receive events when a new student joins
 socket.on("newStudent", (data) => {
@@ -262,7 +262,7 @@ watch(()=> selectedStudent.value.examination_id,
 async (roomId, oldId) => {
   console.log("selectedStudent", selectedStudent.value);
     messages.value = []; // Clear messages when switching students
-    const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
+    const response = await axios.get(`http://localhost:3008/messages/${roomId}`); //roomID
     messages.value = JSON.parse(response.data[0].content);
 
     if (oldId) {
@@ -315,7 +315,7 @@ watch(messages, scrollToBottom);
 
 //============= fetch students data from the server ============
 onMounted(()=> {
-  axios.get("http://localhost:3000/students")
+  axios.get("http://localhost:3008/students")
   .then((response)=>{
     students.value = JSON.parse(JSON.stringify(response.data));
 
@@ -356,7 +356,7 @@ const toggleUserMenu = () => {
 
 const terminateSession = () => {
   // Handle session termination
-  axios.post(`http://localhost:3000/terminateSession/${sessionId}`)
+  axios.post(`http://localhost:3008/terminateSession/${sessionId}`)
   .then((response) => {
     console.log("Session terminated successfully", response.data);
   })

@@ -88,16 +88,16 @@ import { ref, onMounted, watch, nextTick } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:3008");
 
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
 const student = {
-  id: "student08",
-  name: "Aanchal",
-  username: "student08",
-  examination_id: "mba202402student08",
+  id: "student07",
+  name: "Pritam",
+  username: "student07",
+  examination_id: "mba202402student07",
 }
 
 function toggleChat() {
@@ -153,7 +153,7 @@ onMounted(() => {
 });
 
 const fetchMessages = async (roomId) => {
-  const response = await axios.get(`http://localhost:3000/messages/${roomId}`); //roomID
+  const response = await axios.get(`http://localhost:3008/messages/${roomId}`); //roomID
   messages.value = JSON.parse(response.data[0].content);
 };
 

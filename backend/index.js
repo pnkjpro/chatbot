@@ -28,60 +28,103 @@ const io = new Server(server, {
 
 // copy from here
 app.post('/messages', (req, res) => {
-  const { sender, sender_id, recipient_id, room_id, message, examination_id, senderType, timestamp } = req.body;
+  const {
+    sender,
+    sender_id,
+    recipient_id,
+    room_id,
+    message,
+    examination_id,
+    senderType,
+    timestamp,
+  } = req.body;
 
+  // Check if the room_id exists
   const selectQuery = `SELECT content FROM messages WHERE room_id = ? LIMIT 1`;
   db.query(selectQuery, [room_id], (err, results) => {
-    if (err) return res.status(500).send({ error: 'Database query failed', details: err });
-
-    let conversation = [];
-    if (results.length > 0 && results[0].content){
-      conversation = JSON.parse(results[0].content);
+    if (err) {
+      return res.status(500).send({ error: 'Database query failed', details: err });
     }
 
-    conversation.push({
-      sender,
-      sender_id,
-      recipient_id,
-      message,
-      senderType,
-      timestamp,
-    })
+    let conversation = [];
+    if (results.length > 0) {
+      try {
+        if (results[0].content) {
+          conversation = JSON.parse(results[0].content);
+        }
+      } catch (err) {
+        return res.status(500).send({ error: 'Invalid JSON in content field', details: err });
+      }
 
-    //convert updated conversation to JSON and upsert it back into the database
-    if(senderType === "student"){ //to update student_name
-      const upsertQuery = `
-    INSERT INTO messages (room_id, student_name, student_username, content, session_id)
-    VALUES (?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE 
-        content = VALUES(content),
-        student_name = COALESCE(student_name, VALUES(student_name)),
-        student_username = COALESCE(student_username, VALUES(student_username))
-    `;
+      // Add the new message to the conversation
+      conversation.push({
+        sender,
+        sender_id,
+        recipient_id,
+        message,
+        senderType,
+        timestamp: timestamp || new Date().toISOString(),
+      });
 
-    db.query(upsertQuery, [room_id, sender, sender_id, JSON.stringify(conversation), examination_id], (err, result) => {
-      if (err) return res.status(500).send({ error: 'Database update failed', details: err });
-      res.status(200).send({ message: 'Message saved' });
-    });
+      // Determine the columns based on senderType
+      const isStudent = senderType === "student";
+      const nameColumn = isStudent ? "student_name" : "examiner_name";
+      const usernameColumn = isStudent ? "student_username" : "examiner_username";
+
+      // Update the record if it exists
+      const updateQuery = `
+        UPDATE messages 
+        SET 
+          content = ?, 
+          ${nameColumn} = COALESCE(${nameColumn}, ?), 
+          ${usernameColumn} = COALESCE(${usernameColumn}, ?)
+        WHERE room_id = ?
+      `;
+
+      db.query(
+        updateQuery,
+        [JSON.stringify(conversation), sender, sender_id, room_id],
+        (err, result) => {
+          if (err) {
+            return res.status(500).send({ error: 'Database update failed', details: err });
+          }
+          res.status(200).send({ message: 'Message updated' });
+        }
+      );
     } else {
-      const upsertQuery = `
-    INSERT INTO messages (room_id, examiner_name, examiner_username, content, session_id)
-    VALUES (?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE 
-        content = VALUES(content),
-        examiner_name = COALESCE(examiner_name, VALUES(examiner_name)),
-        examiner_username = COALESCE(examiner_username, VALUES(examiner_username))
-    `;
-    db.query(upsertQuery, [room_id, sender, sender_id, JSON.stringify(conversation), examination_id], (err, result) => {
-      if (err) return res.status(500).send({ error: 'Database update failed', details: err });
-      res.status(200).send({ message: 'Message saved' });
-    });
-  }
+      // Create a new record if room_id does not exist
+      const isStudent = senderType === "student";
+      const nameColumn = isStudent ? "student_name" : "examiner_name";
+      const usernameColumn = isStudent ? "student_username" : "examiner_username";
 
+      conversation.push({
+        sender,
+        sender_id,
+        recipient_id,
+        message,
+        senderType,
+        timestamp: timestamp || new Date().toISOString(),
+      });
 
+      const insertQuery = `
+        INSERT INTO messages (room_id, ${nameColumn}, ${usernameColumn}, content, session_id)
+        VALUES (?, ?, ?, ?, ?)
+      `;
 
+      db.query(
+        insertQuery,
+        [room_id, sender, sender_id, JSON.stringify(conversation), examination_id],
+        (err, result) => {
+          if (err) {
+            return res.status(500).send({ error: 'Database insertion failed', details: err });
+          }
+          res.status(201).send({ message: 'Message inserted' });
+        }
+      );
+    }
   });
-})
+});
+
 
 // Define a route to retrieve messages for a specific room
 app.get('/messages/:roomId', (req, res) => {
@@ -121,7 +164,7 @@ io.on('connection', (socket) => {
     try {
       console.log(data);
 
-      await axios.post('http://localhost:3000/messages', {
+      await axios.post('http://localhost:3008/messages', {
         room_id: data.room_id,
         sender: data.sender,
         sender_id: data.sender_id,
