@@ -129,7 +129,7 @@ io.on('connection', (socket) => {
     try {
       console.log(data);
 
-      await axios.post('http://localhost:3000/messages', {
+      await axios.post('http://localhost:3008/messages', {
         room_id: data.room_id,
         sender: data.sender,
         sender_id: data.sender_id,
