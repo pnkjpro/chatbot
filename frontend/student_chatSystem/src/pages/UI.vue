@@ -5,7 +5,7 @@
          class="mb-4 w-[400px] h-[600px] bg-white rounded-3xl flex flex-col overflow-hidden shadow-xl">
       <!-- Header -->
       <div class="bg-[#6B46C1] px-6 py-4">
-        <h1 class="text-white text-xl font-medium">University18 Chatbot</h1>
+        <h1 class="text-white text-xl font-medium">Chatbot</h1>
       </div>
 
       <!-- Chat area -->
@@ -67,7 +67,7 @@
       @click="toggleChat"
       class="w-14 h-14 bg-[#6B46C1] rounded-full flex items-center justify-center shadow-lg hover:bg-[#5535A0] transition-colors duration-200"
     >
-      <svg v-if="!isChatOpen" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <svg v-if="!isOpen" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" 
               stroke-width="2" 
               stroke-linecap="round" 
@@ -98,15 +98,12 @@ const socket = io("https://socket.everitas.in", {
         "Access-Control-Allow-Origin": "*"
     }
 });
+
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
-const student = {
-  id: "student08",
-  name: "Aanchal",
-  username: "student08",
-  examination_id: "mba202402student08",
-}
+const studentId = "student08";
+// const chatInitiated = ref(false);
 
 function toggleChat() {
   isChatOpen.value = !isChatOpen.value;
@@ -120,23 +117,22 @@ function toggleChat() {
   }
 }
 
-socket.emit("userConnected", student.examination_id);
+socket.emit("userConnected", studentId);
 
 function sendMessage() {
   if (newMessage.value.trim()) {
     const message = {
-      room_id: student.examination_id,
-      sender: student.name,
-      sender_id: student.id,
+      room_id: studentId,
+      sender: "Aanchal",
+      sender_id: studentId,
       recipient_id: "examiner01",
       message: newMessage.value,
       senderType: "student",
-      read_status: "unread",
-      examination_id: student.examination_id,
       timestamp: Date.now(),
     };
     socket.emit("message", message);
-    socket.emit("userConnected", student.examination_id);
+    socket.emit("userConnected", studentId);
+    // messages.value.push(message);
     newMessage.value = "";
     scrollToBottom();
   }
@@ -153,7 +149,7 @@ function scrollToBottom() {
 watch(messages, scrollToBottom);
 
 onMounted(() => {
-  socket.emit("joinRoom", student.examination_id);
+  socket.emit("joinRoom", studentId);
   socket.on("message", (data) => {
     messages.value.push(data);
     scrollToBottom();
@@ -165,7 +161,7 @@ const fetchMessages = async (roomId) => {
   messages.value = JSON.parse(response.data[0].content);
 };
 
-fetchMessages(student.examination_id);
+fetchMessages(studentId);
 </script>
 
 <style scoped>

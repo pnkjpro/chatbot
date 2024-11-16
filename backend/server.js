@@ -4,7 +4,7 @@ const http = require('http');
 const axios = require('axios');
 const { Server } = require('socket.io');
 const cors = require('cors'); // Import the cors package
-const db = require('./config/serverdb.js');
+const db = require('./config/serverdb');
 
 const app = express();
 app.use(express.json());
@@ -20,7 +20,7 @@ app.use(cors({
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3001", "http://localhost:3002", "https://localhost"],
+    origin: ["http://localhost:3001", "http://localhost:3002"],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,  // Add this
@@ -36,7 +36,7 @@ return res.status(200).send({message: 'node script is running successfully!'});
 })
 
 app.post('/messages', (req, res) => {
-  const { sender, sender_id, recipient_id, room_id, message, senderType, timestamp } = req.body;
+  const { sender, sender_id, recipient_id, room_id, message, examination_id, senderType, timestamp } = req.body;
 
   const selectQuery = `SELECT content FROM messages WHERE room_id = ? LIMIT 1`;
   db.query(selectQuery, [room_id], (err, results) => {
@@ -59,33 +59,33 @@ app.post('/messages', (req, res) => {
     //convert updated conversation to JSON and upsert it back into the database
     if(senderType === "student"){ //to update student_name
       const upsertQuery = `
-    INSERT INTO messages (room_id, student_name, student_username, content)
-    VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE
+    INSERT INTO messages (room_id, student_name, student_username, content, session_id)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE 
         content = VALUES(content),
         student_name = COALESCE(student_name, VALUES(student_name)),
         student_username = COALESCE(student_username, VALUES(student_username))
     `;
 
-    db.query(upsertQuery, [room_id, sender, sender_id, JSON.stringify(conversation)], (err, result) => {
+    db.query(upsertQuery, [room_id, sender, sender_id, JSON.stringify(conversation), examination_id], (err, result) => {
       if (err) return res.status(500).send({ error: 'Database update failed', details: err });
       res.status(200).send({ message: 'Message saved' });
     });
     } else {
       const upsertQuery = `
-    INSERT INTO messages (room_id, examiner_name, examiner_username, content)
-    VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE
+    INSERT INTO messages (room_id, examiner_name, examiner_username, content, session_id)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE 
         content = VALUES(content),
         examiner_name = COALESCE(examiner_name, VALUES(examiner_name)),
         examiner_username = COALESCE(examiner_username, VALUES(examiner_username))
     `;
-
-    db.query(upsertQuery, [room_id, sender, sender_id, JSON.stringify(conversation)], (err, result) => {
+    db.query(upsertQuery, [room_id, sender, sender_id, JSON.stringify(conversation), examination_id], (err, result) => {
       if (err) return res.status(500).send({ error: 'Database update failed', details: err });
       res.status(200).send({ message: 'Message saved' });
     });
-    }
+  }
+
 
 
   });
@@ -104,7 +104,7 @@ app.get('/messages/:roomId', (req, res) => {
 });
 
 app.get('/students', (req, res) => {
-  const query = `SELECT room_id, student_name, content FROM messages`;
+  const query = `SELECT room_id, student_name, student_username, content, session_id FROM messages`;
 
 
   db.query(query, (err, results) => {
@@ -119,9 +119,9 @@ io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
   // Track user on connection
-  socket.on('userConnected', (studentId) => {
-    connectedStudents.set(studentId, socket.id)
-    io.emit('userStatus', { studentId, status: 'online' });
+  socket.on('userConnected', (examinationId) => {
+    connectedStudents.set(examinationId, socket.id)
+    io.emit('userStatus', { examinationId, status: 'online' });
   });
 
   //Handle incoming messages
@@ -129,12 +129,13 @@ io.on('connection', (socket) => {
     try {
       console.log(data);
 
-      await axios.post('http://localhost:3008/messages', {
+      await axios.post('http://localhost:3000/messages', {
         room_id: data.room_id,
         sender: data.sender,
         sender_id: data.sender_id,
         recipient_id: data.recipient_id, // Adjust according to the role or ID structure
         message: data.message,
+        examination_id: data.examination_id, 
         senderType: data.senderType,
         timestamp: data.timestamp,
       });
@@ -150,9 +151,9 @@ io.on('connection', (socket) => {
   });
 
   // Join a room based on user role or ID
-  socket.on('joinRoom', (room) => {
-    socket.join(room);
-    console.log(`User ${socket.id} joined room ${room}`);
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`User ${socket.id} joined room ${roomId}`);
   });
 
   // Leave a room
@@ -164,20 +165,20 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
 
-    let disconnectedStudentId = null; // Define a variable to hold the studentId
+    let disconnectedexaminationId = null; // Define a variable to hold the studentId
 
-    for (const [studentId, id] of connectedStudents.entries()) {
+    for (const [examinationId, id] of connectedStudents.entries()) {
       if (id === socket.id) {
-        connectedStudents.delete(studentId);
-        disconnectedStudentId = studentId; // Store the studentId
-        console.log(`User ${studentId} is offline`);
+        connectedStudents.delete(examinationId);
+        disconnectedexaminationId = examinationId; // Store the studentId
+        console.log(`User ${examinationId} is offline`);
         break; // Exit the loop once the student is found
       }
     }
 
     // Check if a studentId was found and emit the event if so
-    if (disconnectedStudentId !== null) {
-      io.emit('userStatus', { studentId: disconnectedStudentId, status: 'offline' });
+    if (disconnectedexaminationId !== null) {
+      io.emit('userStatus', { examinationId: disconnectedexaminationId, status: 'offline' });
     }
   });
 

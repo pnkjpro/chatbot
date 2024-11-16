@@ -1,0 +1,10 @@
+// Initialise socket.io client
+const socket = io("https://socket.everitas.in", {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    withCredentials: true,
+    extraHeaders: {
+        "Access-Control-Allow-Origin": "*"
+    }
+});

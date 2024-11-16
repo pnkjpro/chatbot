@@ -17,6 +17,11 @@ const router = createRouter({
     path: '/server',
     name: 'Server Chat',
     component: () => import('@/pages/ServerChat.vue'),
+  },
+  {
+    path: '/ui',
+    name: 'Chat Bot',
+    component: () => import('@/pages/UI.vue'),
   }
   ],
 })

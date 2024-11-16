@@ -19,11 +19,10 @@
           <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white">
             {{ selectedStudent.name[0] || "S" }}
           </div>
-        <div class="sm:flex flex-col">
-          <span class="text-sm font-medium sm:inline hidden">{{ selectedStudent.name || "Anonymous Student" }}</span>
-          <span class="text-sm sm:text-xs text-green-500">{{ selectedStudent.status || "offline" }}</span>
-        </div>
-
+          <div class="hidden sm:flex flex-col">
+            <span class="text-sm font-medium"> {{ selectedStudent.name || "Anonymous Student" }}</span>
+            <span class="text-xs text-green-500">{{  selectedStudent.status  || "offline" }}</span>
+          </div>
         </div>
         <!-- Three dots menu -->
         <div class="relative">
@@ -202,6 +201,7 @@ const selectedStudent = ref({
   username: "",
   content: "",
   timestamp: null,
+  examination_id: null,
   status: "offline",
   unread: 0,
 });
@@ -220,7 +220,7 @@ const socket = io("https://socket.everitas.in", {
 
 // Receive events when a new student joins
 socket.on("newStudent", (data) => {
-  const existingStudent = students.value.find((s) => s.id === data.room_id);
+  const existingStudent = students.value.find((s) => s.examination_id === data.room_id);
   // even if the student in the loop variable is different from existingStudent, since both reference the same underlying object in students.value, modifying existingStudent.content will automatically update student.content in the loop because the object is the same. Vue detects changes to the object and updates the UI accordingly
 
   if (existingStudent) {
@@ -232,6 +232,7 @@ socket.on("newStudent", (data) => {
       name: data.sender,
       username: data.sender_id,
       message: data.message,
+      examination_id: data.examination_id,
       timestamp: data.timestamp,
       status: "offline",
       unread: 7, //do something with this
@@ -242,7 +243,7 @@ socket.on("newStudent", (data) => {
 // Receive events when a student is online/offline
 socket.on("userStatus", (studentStatus) => {
   const existingStudent = students.value.find(
-    (s) => s.username === studentStatus.studentId
+    (s) => s.examination_id === studentStatus.examinationId
   );
   existingStudent.status = studentStatus.status;
 });
@@ -265,8 +266,9 @@ function leaveRoom(roomId) {
   }
 }
 
-watch(()=> selectedStudent.value.id, 
+watch(()=> selectedStudent.value.examination_id, 
 async (roomId, oldId) => {
+  console.log("selectedStudent", selectedStudent.value);
     messages.value = []; // Clear messages when switching students
     const response = await axios.get(`https://socket.everitas.in/messages/${roomId}`); //roomID
     messages.value = JSON.parse(response.data[0].content);
@@ -292,16 +294,17 @@ socket.on("message", (data) => {
 function sendMessage() {
   if (newMessage.value.trim()) {
     const message = {
-      room_id: selectedStudent.value.id,
-      sender: "Gunjan",
+      room_id: selectedStudent.value.examination_id,
+      sender: "Geetika",
       sender_id: "examiner01",
-      recipient_id: selectedStudent.value.id,
+      recipient_id: selectedStudent.value.username,
       message: newMessage.value,
+      examination_id: selectedStudent.value.examination_id,
       senderType: "examiner",
+      read_status: "unread",
       timestamp: Date.now(),
     };
     socket.emit("message", message);
-    // messages.value.push(message);
     newMessage.value = "";
     scrollToBottom();
   }
@@ -327,11 +330,12 @@ onMounted(()=> {
     students.value = students.value.map((student) => {
       const parsedContent = JSON.parse(student.content);
       return {
-        id: student.room_id, // student_username = room_id = student_id
+        id: student.student_username,
         name: student.student_name,
-        username: student.room_id,
+        username: student.student_username,
         message: parsedContent[parsedContent.length - 1].message,
         timestamp: parsedContent[parsedContent.length - 1].timestamp,
+        examination_id: student.session_id,
         status: "offline",
         unread: 3, // do something with this
       }
@@ -360,6 +364,13 @@ const toggleUserMenu = () => {
 
 const terminateSession = () => {
   // Handle session termination
+  axios.post(`https://socket.everitas.in/terminateSession/${sessionId}`)
+  .then((response) => {
+    console.log("Session terminated successfully", response.data);
+  })
+  .catch((error) => {
+    console.error("Error terminating session", error);
+  })
   isUserMenuOpen.value = false
 }
 
