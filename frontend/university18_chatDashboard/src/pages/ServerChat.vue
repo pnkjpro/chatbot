@@ -34,7 +34,7 @@
           <!-- Dropdown menu -->
           <div v-if="isUserMenuOpen" 
                class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg py-1 w-48 z-50">
-            <button @click="terminateSession" 
+            <button @click="terminateSession(selectedStudent.examination_id)" 
                     class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -69,6 +69,7 @@
             </svg>
             <input 
               type="text" 
+              v-model="searchQuery"
               class="bg-transparent border-none focus:ring-0 flex-1 ml-2 text-[#9c9c9c]"
               placeholder="Search"
             />
