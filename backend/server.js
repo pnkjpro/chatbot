@@ -37,6 +37,7 @@ app.post('/messages', (req, res) => {
     recipient_id,
     room_id,
     message,
+    clientcode,
     examination_id,
     senderType,
     timestamp,
@@ -110,13 +111,13 @@ app.post('/messages', (req, res) => {
       });
 
       const insertQuery = `
-        INSERT INTO messages (room_id, ${nameColumn}, ${usernameColumn}, content, session_id)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO messages (room_id, ${nameColumn}, ${usernameColumn}, content, clientcode, session_id)
+        VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       db.query(
         insertQuery,
-        [room_id, sender, sender_id, JSON.stringify(conversation), examination_id],
+        [room_id, sender, sender_id, JSON.stringify(conversation), clientcode, examination_id],
         (err, result) => {
           if (err) {
             return res.status(500).send({ error: 'Database insertion failed', details: err });
@@ -140,11 +141,12 @@ app.get('/messages/:roomId', (req, res) => {
   });
 });
 
-app.get('/students', (req, res) => {
-  const query = `SELECT room_id, student_name, student_username, content, session_id FROM messages WHERE session_status = ?`;
+app.get('/students/:clientcode', (req, res) => {
+  const { clientcode } = req.params;
+  const query = `SELECT room_id, student_name, student_username, content, session_id, clientcode FROM messages WHERE session_status = ? AND clientcode = ?`;
 
 
-  db.query(query, ['active'], (err, results) => {
+  db.query(query, ['active', clientcode], (err, results) => {
     if (err) return res.status(500).send(err);
     res.status(200).json(results);
   });
@@ -181,6 +183,7 @@ io.on('connection', (socket) => {
         sender_id: data.sender_id,
         recipient_id: data.recipient_id, // Adjust according to the role or ID structure
         message: data.message,
+        clientcode: data.clientcode,
         examination_id: data.examination_id,
         senderType: data.senderType,
         timestamp: data.timestamp,

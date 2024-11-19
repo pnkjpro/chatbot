@@ -184,6 +184,7 @@ function sendMessage() {
       senderType: "student",
       read_status: "unread",
       examination_id: student.examination_id,
+      clientcode: student.clientcode,
       timestamp: Date.now(),
     };
     socket.emit("message", message);
