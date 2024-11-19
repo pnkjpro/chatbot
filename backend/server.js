@@ -11,7 +11,7 @@ app.use(express.json());
 
 // Apply CORS middleware globally
 app.use(cors({
-  origin: ["http://localhost:3001", "http://localhost:3002", "https://localhost"], // Allow requests from these origins
+  origin: "*",
   methods: ["GET", "POST"], // Allowed methods
   allowedHeaders: ["Content-Type", "Authorization"], // Add necessary headers
   credentials: true // Set to true if you need to send cookies or authentication data
@@ -20,7 +20,7 @@ app.use(cors({
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3001", "http://localhost:3002"],
+    origin: "*",
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,  // Add this
@@ -29,11 +29,6 @@ const io = new Server(server, {
   pingTimeout: 60000,   // Add this
   pingInterval: 25000   // Add this
 });
-
-app.get('/check', (req, res) => {
-console.log("node script is running successfully!");
-return res.status(200).send({message: 'node script is running successfully!'});
-})
 
 app.post('/messages', (req, res) => {
   const {
@@ -81,10 +76,10 @@ app.post('/messages', (req, res) => {
 
       // Update the record if it exists
       const updateQuery = `
-        UPDATE messages 
-        SET 
-          content = ?, 
-          ${nameColumn} = COALESCE(${nameColumn}, ?), 
+        UPDATE messages
+        SET
+          content = ?,
+          ${nameColumn} = COALESCE(${nameColumn}, ?),
           ${usernameColumn} = COALESCE(${usernameColumn}, ?)
         WHERE room_id = ?
       `;
@@ -186,7 +181,7 @@ io.on('connection', (socket) => {
         sender_id: data.sender_id,
         recipient_id: data.recipient_id, // Adjust according to the role or ID structure
         message: data.message,
-        examination_id: data.examination_id, 
+        examination_id: data.examination_id,
         senderType: data.senderType,
         timestamp: data.timestamp,
       });

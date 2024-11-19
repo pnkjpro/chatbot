@@ -32,7 +32,7 @@
             </svg>
           </button>
           <!-- Dropdown menu -->
-          <div v-if="isUserMenuOpen" 
+          <!-- <div v-if="isUserMenuOpen" 
                class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg py-1 w-48 z-50">
             <button @click="terminateSession(selectedStudent.examination_id)" 
                     class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
@@ -41,7 +41,7 @@
               </svg>
               <span>Terminate Session</span>
             </button>
-          </div>
+          </div> -->
         </div>
       </div>
     </header>
@@ -102,14 +102,14 @@
           ]">
             {{ student.username }}
           </span>
-          <span class="text-xs text-gray-500 flex-shrink-0 ml-2">{{ formatDistanceToNow(student.timestamp, { addSuffix: true }) }}</span>
+          <span class="text-xs text-gray-500 flex-shrink-0 ml-2">{{ formatTimestamp(student.timestamp, { addSuffix: true }) }}</span>
         </div>
         <div class="flex items-center">
           <span class="text-sm text-gray-500 truncate block">{{ student.message }}</span>
-          <div v-if="student.unread" 
+          <!-- <div v-if="student.unread" 
                class="ml-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
             {{ student.unread }}
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -147,7 +147,7 @@
                 'text-xs text-gray-500 mt-1',
                 message.sent ? 'text-right' : ''
               ]">
-                {{ formatDistanceToNow(message.timestamp, { addSuffix: true }) }}
+                {{ formatTimestamp(message.timestamp, { addSuffix: true }) }}
               </div>
             </div>
           </div>
@@ -157,12 +157,12 @@
         <div class="bg-[#ffffff] p-4 border-t border-[#d1d1d1]">
           <div class="flex items-center space-x-2">
             <!-- File upload button -->
-            <label class="cursor-pointer p-2 hover:bg-gray-100 rounded-full">
+            <!-- <label class="cursor-pointer p-2 hover:bg-gray-100 rounded-full">
               <input type="file" class="hidden" @change="handleFileUpload" />
               <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
               </svg>
-            </label>
+            </label> -->
             
             <input 
             v-model="newMessage"
@@ -187,7 +187,7 @@
 import { ref, watch, onMounted, defineEmits, nextTick } from 'vue';
 import { io } from "socket.io-client";
 import axios from "axios";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { useToast } from 'vue-toastification';
 
 
@@ -222,6 +222,10 @@ const socket = io(`${appUrl}`, {
     }
 });
 
+const formatTimestamp = (timestamp) => {
+  return format(timestamp, "HH:mm a");
+}
+
 // Receive events when a new student joins
 socket.on("newStudent", (data) => {
   const existingStudent = students.value.find((s) => s.examination_id === data.room_id);
@@ -238,7 +242,7 @@ socket.on("newStudent", (data) => {
       message: data.message,
       examination_id: data.examination_id,
       timestamp: data.timestamp,
-      status: "offline",
+      status: "online",
       unread: 7, //do something with this
     });
   }
