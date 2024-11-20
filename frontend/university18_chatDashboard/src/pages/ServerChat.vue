@@ -286,16 +286,17 @@ import { ref, watch, onMounted, defineEmits, nextTick } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 import { formatDistanceToNow, format } from "date-fns";
+import { useRoute } from 'vue-router';
 import { useToast } from "vue-toastification";
 
 //-------------------------- Initial Variables ------------------------
-const appUrl = "https://socket.everitas.in";
+const appUrl = "https://socket.everitas.in/api";
 let toast = useToast();
 const students = ref([]);
 const messages = ref([]);
 const newMessage = ref("");
 const searchQuery = ref("");
-const client = ref("uom");
+const route = useRoute();
 const selectedStudent = ref({
   id: null,
   name: "",
@@ -309,8 +310,12 @@ const selectedStudent = ref({
 
 const filteredStudents = ref([]);
 
+//  http://localhost:3002/server/uom/gunjan/gunjanmsl01
+const { client, examinerName, examinerUsername } = route.params;
+console.log(client, examinerName, examinerUsername);
+
 // Initialise socket.io client
-const socket = io(`${appUrl}`, {
+const socket = io(`https://socket.everitas.in`, {
   transports: ["websocket", "polling"],
   reconnection: true,
   reconnectionAttempts: 5,
@@ -404,8 +409,8 @@ function sendMessage() {
   if (newMessage.value.trim()) {
     const message = {
       room_id: selectedStudent.value.examination_id,
-      sender: "Geetika",
-      sender_id: "examiner01",
+      sender: examinerName,
+      sender_id: examinerUsername,
       recipient_id: selectedStudent.value.username,
       message: newMessage.value,
       clientcode: client,
@@ -450,7 +455,7 @@ watch(messages, scrollToBottom);
 //============= fetch students data from the server ============
 onMounted(() => {
   axios
-    .get(`${appUrl}/students/${clientcode}`)
+    .get(`${appUrl}/students/${client}`)
     .then((response) => {
       students.value = JSON.parse(JSON.stringify(response.data));
 

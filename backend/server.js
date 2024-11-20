@@ -30,7 +30,8 @@ const io = new Server(server, {
   pingInterval: 25000   // Add this
 });
 
-app.post('/messages', (req, res) => {
+app.post('/api/messages', (req, res) => {
+console.log('Request Body:', req.body);
   const {
     sender,
     sender_id,
@@ -80,6 +81,7 @@ app.post('/messages', (req, res) => {
         UPDATE messages
         SET
           content = ?,
+          clientcode = COALESCE(clientcode, ?),
           ${nameColumn} = COALESCE(${nameColumn}, ?),
           ${usernameColumn} = COALESCE(${usernameColumn}, ?)
         WHERE room_id = ?
@@ -87,7 +89,7 @@ app.post('/messages', (req, res) => {
 
       db.query(
         updateQuery,
-        [JSON.stringify(conversation), sender, sender_id, room_id],
+        [JSON.stringify(conversation), clientcode, sender, sender_id, room_id],
         (err, result) => {
           if (err) {
             return res.status(500).send({ error: 'Database update failed', details: err });
@@ -130,7 +132,7 @@ app.post('/messages', (req, res) => {
 });
 
 // Define a route to retrieve messages for a specific room
-app.get('/messages/:roomId', (req, res) => {
+app.get('/api/messages/:roomId', (req, res) => {
   const { roomId } = req.params;
   const query = `SELECT * FROM messages WHERE room_id = ?`;
   db.query(query, [roomId], (err, results) => {
@@ -141,18 +143,18 @@ app.get('/messages/:roomId', (req, res) => {
   });
 });
 
-app.get('/students/:clientcode', (req, res) => {
-  const { clientcode } = req.params;
+app.get('/api/students/:client', (req, res) => {
+  const { client } = req.params;
   const query = `SELECT room_id, student_name, student_username, content, session_id, clientcode FROM messages WHERE session_status = ? AND clientcode = ?`;
 
 
-  db.query(query, ['active', clientcode], (err, results) => {
+  db.query(query, ['active', client], (err, results) => {
     if (err) return res.status(500).send(err);
     res.status(200).json(results);
   });
 });
 
-app.get('/terminateSession/:sessionId', (req, res) => {
+app.get('/api/terminateSession/:sessionId', (req, res) => {
   const { sessionId } = req.params;
   const query = `UPDATE messages SET session_status = ? WHERE session_id = ?`
   db.query(query, ['inactive', sessionId], (err, results) => {
@@ -177,7 +179,7 @@ io.on('connection', (socket) => {
     try {
       console.log(data);
 
-      await axios.post('http://localhost:3008/messages', {
+      await axios.post('http://localhost:3008/api/messages', {
         room_id: data.room_id,
         sender: data.sender,
         sender_id: data.sender_id,

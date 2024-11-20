@@ -131,7 +131,7 @@ import axios from "axios";
 const student = inject("studentData");
 console.log("Student created successfully with inject: ", student);
 
-const appUrl = "https://socket.everitas.in";
+const appUrl = "https://socket.everitas.in/api";
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
@@ -155,13 +155,14 @@ function toggleChat() {
       messages.value.push({
         message: "Hi, How May I Help You?😎",
         senderType: "examiner",
+        timestamp: Date.now(),
       });
     }, 1000);
   }
 }
 
 // Initialise socket.io client
-const socket = io(`${appUrl}`, {
+const socket = io(`https://socket.everitas.in`, {
   transports: ["websocket", "polling"],
   reconnection: true,
   reconnectionAttempts: 5,
