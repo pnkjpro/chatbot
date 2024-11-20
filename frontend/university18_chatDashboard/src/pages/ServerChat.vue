@@ -24,13 +24,8 @@
           </svg>
         </button>
         <div class="w-20 h-20">
-          <img
-            src="/src/assets/image/logo.png"
-            alt="U18 Chat"
-            class="w-full h-full object-contain"
-          />
+          
         </div>
-        <h1 class="text-lg font-semibold hidden sm:block">U18 Chat</h1>
       </div>
 
       <div
