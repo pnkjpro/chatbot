@@ -305,7 +305,6 @@ const selectedStudent = ref({
 
 const filteredStudents = ref([]);
 
-//  http://localhost:3002/server/uom/gunjan/gunjanmsl01
 const { client, examinerName, examinerUsername } = route.params;
 console.log(client, examinerName, examinerUsername);
 
@@ -380,7 +379,8 @@ watch(
     console.log("selectedStudent", selectedStudent.value);
     messages.value = []; // Clear messages when switching students
     const response = await axios.get(`${appUrl}/messages/${roomId}`); //roomID
-    messages.value = JSON.parse(response.data[0].content);
+    // messages.value = JSON.parse(response.data[0].content);
+    messages.value = response.data[0].content;
 
     if (oldId) {
       console.log("Old Student Id", oldId);
@@ -452,10 +452,12 @@ onMounted(() => {
   axios
     .get(`${appUrl}/students/${client}`)
     .then((response) => {
-      students.value = JSON.parse(JSON.stringify(response.data));
+      students.value = response.data;
+      // students.value = JSON.parse(JSON.stringify(response.data));
 
       students.value = students.value.map((student) => {
-        const parsedContent = JSON.parse(student.content);
+        const parsedContent = student.content;
+        // const parsedContent = JSON.parse(student.content);
         return {
           id: student.student_username,
           name: student.student_name,

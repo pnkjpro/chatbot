@@ -4,7 +4,7 @@ const http = require('http');
 const axios = require('axios');
 const { Server } = require('socket.io');
 const cors = require('cors'); // Import the cors package
-const db = require('./config/serverdb');
+const {db} = require('./config/serverdb');
 
 const app = express();
 app.use(express.json());
@@ -30,7 +30,7 @@ const io = new Server(server, {
   pingInterval: 25000   // Add this
 });
 
-app.post('/api/messages', (req, res) => {
+app.post('/api/messages', async(req, res) => {
 console.log('Request Body:', req.body);
   const {
     sender,
@@ -44,18 +44,17 @@ console.log('Request Body:', req.body);
     timestamp,
   } = req.body;
 
+  try {
   // Check if the room_id exists
   const selectQuery = `SELECT content FROM messages WHERE room_id = ? LIMIT 1`;
-  db.query(selectQuery, [room_id], (err, results) => {
-    if (err) {
-      return res.status(500).send({ error: 'Database query failed', details: err });
-    }
+  const results = await db.execute(selectQuery, [room_id]);
 
     let conversation = [];
-    if (results.length > 0) {
+
+    if (results[0].length > 0) {
       try {
-        if (results[0].content) {
-          conversation = JSON.parse(results[0].content);
+        if (results[0][0].content) {
+          conversation = results[0][0].content;
         }
       } catch (err) {
         return res.status(500).send({ error: 'Invalid JSON in content field', details: err });
@@ -70,6 +69,8 @@ console.log('Request Body:', req.body);
         senderType,
         timestamp: timestamp || new Date().toISOString(),
       });
+
+      console.log("after push Updated: ",conversation);
 
       // Determine the columns based on senderType
       const isStudent = senderType === "student";
@@ -87,13 +88,14 @@ console.log('Request Body:', req.body);
         WHERE room_id = ?
       `;
 
-      db.query(
+      await db.execute(
         updateQuery,
         [JSON.stringify(conversation), clientcode, sender, sender_id, room_id],
         (err, result) => {
           if (err) {
             return res.status(500).send({ error: 'Database update failed', details: err });
           }
+          console.log("Updated Messages: ",result);
           res.status(200).send({ message: 'Message updated' });
         }
       );
@@ -112,12 +114,14 @@ console.log('Request Body:', req.body);
         timestamp: timestamp || new Date().toISOString(),
       });
 
+      console.log("after push INserted: ",conversation);
+
       const insertQuery = `
         INSERT INTO messages (room_id, ${nameColumn}, ${usernameColumn}, content, clientcode, session_id)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
 
-      db.query(
+      await db.execute(
         insertQuery,
         [room_id, sender, sender_id, JSON.stringify(conversation), clientcode, examination_id],
         (err, result) => {
@@ -128,39 +132,30 @@ console.log('Request Body:', req.body);
         }
       );
     }
-  });
+  } catch (err) {
+
+  }
 });
 
 // Define a route to retrieve messages for a specific room
-app.get('/api/messages/:roomId', (req, res) => {
+app.get('/api/messages/:roomId', async(req, res) => {
   const { roomId } = req.params;
   const query = `SELECT * FROM messages WHERE room_id = ?`;
-  db.query(query, [roomId], (err, results) => {
-    if (err) {
-      return res.status(500).send({ error: 'Database query failed', details: err });
-    }
-    res.status(200).json(results);
-  });
+  const results = await db.execute(query, [roomId]);
+  return res.status(200).json(results[0]);
 });
 
-app.get('/api/students/:client', (req, res) => {
+app.get('/api/students/:client', async(req, res) => {
   const { client } = req.params;
   const query = `SELECT room_id, student_name, student_username, content, session_id, clientcode FROM messages WHERE session_status = ? AND clientcode = ?`;
-
-
-  db.query(query, ['active', client], (err, results) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).json(results);
-  });
+  const results = await db.execute(query, ['active', client]);
+  return res.status(200).json(results[0]);
 });
 
-app.get('/api/terminateSession/:sessionId', (req, res) => {
+app.get('/api/terminateSession/:sessionId', async(req, res) => {
   const { sessionId } = req.params;
-  const query = `UPDATE messages SET session_status = ? WHERE session_id = ?`
-  db.query(query, ['inactive', sessionId], (err, results) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).json(results);
-  });
+  const query = `UPDATE messages SET session_status = ? WHERE session_id = ?`;
+  await db.execute(query, ['inactive', sessionId]);
 });
 
 const connectedStudents = new Map();
@@ -176,9 +171,12 @@ io.on('connection', (socket) => {
 
   //Handle incoming messages
   socket.on('message', async (data) => {
-    try {
-      console.log(data);
+    // Emit message to the specific room and notify of new student if applicable
+    io.to(data.room_id).emit('message', data);
+    io.emit('newStudent', data);
+    console.log("Sent message");
 
+    try {
       await axios.post('http://localhost:3008/api/messages', {
         room_id: data.room_id,
         sender: data.sender,
@@ -190,12 +188,7 @@ io.on('connection', (socket) => {
         senderType: data.senderType,
         timestamp: data.timestamp,
       });
-
-      // Emit message to the specific room and notify of new student if applicable
-      io.to(data.room_id).emit('message', data);
-      io.emit('newStudent', data);
-
-      console.log("Sent message");
+      
     } catch (error) {
       console.error('Error sending message:', error);
     }

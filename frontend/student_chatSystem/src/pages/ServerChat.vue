@@ -135,14 +135,6 @@ const appUrl = "https://socket.everitas.in/api";
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
-// const student = {
-//   id: "student08",
-//   name: "Anchal",
-//   username: "student08",
-//   examination_id: "mba202402student08",
-// }
-
-console.log("console is printed checking student data...");
 
 const formatTimestamp = (timestamp) => {
   return format(timestamp, "hh:mm a");
@@ -159,6 +151,7 @@ function toggleChat() {
       });
     }, 1000);
   }
+  scrollToBottom();
 }
 
 // Initialise socket.io client
@@ -216,7 +209,9 @@ onMounted(() => {
 
 const fetchMessages = async (roomId) => {
   const response = await axios.get(`${appUrl}/messages/${roomId}`); //roomID
-  messages.value = JSON.parse(response.data[0].content);
+  // messages.value = JSON.parse(response.data[0].content);
+  messages.value = response.data[0].content;
+  console.log("Message: " + response);
 };
 
 fetchMessages(student.examination_id);
