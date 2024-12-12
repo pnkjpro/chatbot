@@ -131,13 +131,17 @@
         <!-- Chat List -->
         <div class="overflow-hidden">
           <div
-            v-for="student in filteredStudents.length > 0
-              ? filteredStudents
-              : students"
+            v-for="student in computedStudentList"
             :key="student.id"
             class="hover:bg-gray-100 px-3 py-2 cursor-pointer"
             @click="selectStudent(student)"
           >
+          <div 
+            v-if="computedStudentList.length === 0" 
+            class="text-center text-gray-500 p-4"
+          >
+            {{"No students found"}}
+          </div>
             <div class="flex items-center space-x-3">
               <div class="relative flex-shrink-0">
                 <div
@@ -148,6 +152,7 @@
                       : 'bg-gray-400',
                   ]"
                 ></div>
+                
                 <div
                   class="w-10 h-10 font-semibold rounded-full bg-emerald-500 flex items-center justify-center text-white"
                 >
@@ -179,6 +184,19 @@
                class="ml-2 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
             {{ student.unread }}
           </div> -->
+          <!-- In the chat list item, update the bell icon -->
+<div
+  v-if="student.unreadCount > 0" 
+  class="absolute top-2 right-2"
+>
+  <div class="relative">
+    <i class="far fa-bell text-red-500"></i>
+    <span 
+      class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+    >
+      {{ student.unreadCount }}
+    </span>
+  </div></div>
                 </div>
               </div>
             </div>
@@ -277,7 +295,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, defineEmits, nextTick } from "vue";
+import { ref, watch, onMounted, defineEmits, nextTick, computed } from "vue";
 import { io } from "socket.io-client";
 import axios from "axios";
 import { formatDistanceToNow, format } from "date-fns";
@@ -363,6 +381,14 @@ const selectStudent = (student) => {
   if (window.innerWidth < 1024) {
     isSidebarOpen.value = false;
   }
+  // Reset unread count when student is selected
+  const selectedStudentIndex = students.value.findIndex(
+    s => s.examination_id === student.examination_id
+  );
+  
+  if (selectedStudentIndex !== -1) {
+    students.value[selectedStudentIndex].unreadCount = 0;
+  }
   selectedStudent.value = student;
 };
 
@@ -394,11 +420,35 @@ watch(
   { immediate: true, deep: true }
 );
 
+const computedStudentList = computed(() => {
+  // If search query exists, filter students
+  if (searchQuery.value) {
+    return students.value.filter((student) => 
+      student.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      student.username.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      student.examination_id.toString().includes(searchQuery.value)
+    ).sort((a, b) => b.timestamp - a.timestamp);
+  }
+  
+  // If no search query, return all students sorted by timestamp
+  return students.value.sort((a, b) => b.timestamp - a.timestamp);
+});
+
 socket.on("message", (data) => {
   console.log("Message Structure on Emit", data);
   messages.value.push(data);
+
+  // Increment unread count only if the student is not currently selected
+  if (selectedStudent.value.examination_id !== data.room_id) {
+      students.value[studentIndex].unreadCount = 
+        (students.value[studentIndex].unreadCount || 0) + 1;
+    }
+
+  
   scrollToBottom();
 });
+
+
 
 function sendMessage() {
   if (newMessage.value.trim()) {
@@ -419,25 +469,6 @@ function sendMessage() {
     scrollToBottom();
   }
 }
-
-//=================== search and filter =================
-function filterStudents(searchTerm) {
-  filteredStudents.value = students.value.filter((student) => {
-    return (
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.examination_id.toString().includes(searchTerm)
-    );
-  });
-  return filteredStudents;
-}
-
-watch(
-  () => searchQuery.value,
-  (newSearchQuery) => {
-    console.log(filterStudents(newSearchQuery));
-  }
-);
-
 async function scrollToBottom() {
   await nextTick();
   const messagesContainer = document.querySelector(".messages-container");
@@ -466,7 +497,7 @@ onMounted(() => {
           timestamp: parsedContent[parsedContent.length - 1].timestamp,
           examination_id: student.session_id,
           status: "offline",
-          unread: 3, // do something with this
+          unreadCount: 0, // Initialize unread count
         };
       });
 
