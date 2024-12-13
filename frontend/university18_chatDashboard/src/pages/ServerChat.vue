@@ -173,7 +173,7 @@
                     {{ student.username }}
                   </span>
                   <span
-                    class="px-1 py-0.5 text-xs font-semibold rounded-lg bg-gray-200 text-gray-600"
+                    class="px-1 py-0.5 text-xs font-semibold rounded-lg bg-blue-200 text-blue-600"
                   >
                     {{ student.examiner_username }}
                   </span>
