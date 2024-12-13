@@ -214,7 +214,7 @@
         <!-- Messages -->
         <div class="flex-1 overflow-y-auto p-4 messages-container">
           <div
-            v-for="message in messages"
+            v-for="message in filteredMessages"
             :key="message.id"
             :class="[
               'flex items-start space-x-2 mb-4',
@@ -304,6 +304,7 @@ const messages = ref([]);
 const newMessage = ref("");
 const searchQuery = ref("");
 const route = useRoute();
+const filteredMessages = computed(() => messages.value.filter(m => m.message != "Hello! You are trying to connect with a proctor.."))
 const selectedStudent = ref({
   id: null,
   name: "",
@@ -431,9 +432,6 @@ const computedStudentList = computed(() => {
 
 socket.on("message", (data) => {
   console.log("Message Structure on Emit", data);
-  if(data.message != "student_ping") {
-    messages.value.push(data);
-  }
   messages.value.push(data);
   scrollToBottom();
 });

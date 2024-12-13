@@ -14,7 +14,7 @@
 
       <!-- Chat area -->
       <div class="flex-1 bg-[#F5F5F5] p-4 overflow-y-auto chat-body">
-        <div v-for="(msg, index) in messages" :key="index" class="mb-4">
+        <div v-for="(msg, index) in filteredMessages" :key="index" class="mb-4">
           <!-- Bot Message -->
           <div
             v-if="msg.senderType === 'examiner'"
@@ -122,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick, inject } from "vue";
+import { ref, onMounted, watch, nextTick, inject, computed } from "vue";
 import { format } from "date-fns";
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -135,6 +135,8 @@ const appUrl = "https://socket.everitas.in/api";
 const isChatOpen = ref(false);
 const messages = ref([]);
 const newMessage = ref("");
+const filteredMessages = computed(() => messages.value.filter(m => m.message != "Hello! You are trying to connect with a proctor.."))
+
 
 const formatTimestamp = (timestamp) => {
   return format(timestamp, "hh:mm a");
