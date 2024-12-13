@@ -188,7 +188,7 @@
                   
                   <!-- Unread Messages Bell Icon -->
                 <div v-if="student.unread" class="px-2">
-                  <i class="far fa-bell text-red-500"></i>
+                  <i class="fas fa-bell text-red-500"></i>
                 </div>
                   
                 </div>
@@ -205,7 +205,7 @@
         class="flex-1 flex flex-col bg-[#f0f2f5] items-center justify-center"
       >
         <div class="text-center text-gray-500">
-          <i class="far fa-comment-dots text-6xl mb-4 text-emerald-500"></i>
+          <i class="fas fa-comment-dots text-6xl mb-4 text-emerald-500"></i>
           <h2 class="text-xl font-semibold">Select Student to Chat</h2>
         </div>
       </div>
