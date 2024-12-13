@@ -355,7 +355,6 @@ socket.on("newStudent", (data) => {
         room_id: data.room_id,
         name: data.sender,
         username: data.sender_id,
-        examiner_username: "Anonymous",
         message: data.message,
         examination_id: data.examination_id,
         timestamp: data.timestamp,
@@ -455,9 +454,9 @@ function sendMessage() {
     };
 
     // ================= to change the examiner name if not set =================
-    if(selectedStudent.value.examiner_username == "Anonymous"){
-      selectedStudent.value.examiner_username = examinerUsername;
-    }
+    // if(selectedStudent.value.examiner_username == "Anonymous"){
+    //   selectedStudent.value.examiner_username = examinerUsername;
+    // }
     socket.emit("message", message);
     newMessage.value = "";
     scrollToBottom();
