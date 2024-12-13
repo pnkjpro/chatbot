@@ -8,7 +8,7 @@ const router = createRouter({
       redirect: '/server',
     },
     {
-      path: '/server/:client/:examinerName/:examinerUsername',
+      path: '/server/:client/:examinerName?/:examinerUsername?',
       name: 'Server Chat',
       component: () => import('../pages/ServerChat.vue'),
       props: true, // Pass route params as props
