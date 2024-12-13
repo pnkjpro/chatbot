@@ -200,7 +200,20 @@ watch(messages, scrollToBottom);
 
 onMounted(() => {
   socket.emit("joinRoom", student.examination_id);
-  socket.on("message", (data) => {
+  const message = {
+      room_id: student.examination_id,
+      sender: student.name,
+      sender_id: student.id,
+      recipient_id: "examiner01",
+      message: "Hello! You are trying to connect with a proctor..",
+      senderType: "student",
+      read_status: "unread",
+      examination_id: student.examination_id,
+      clientcode: student.clientcode,
+      timestamp: Date.now(),
+    };
+    socket.emit("message", message);
+    socket.on("message", (data) => {
     messages.value.push(data);
     isChatOpen.value = true;
     scrollToBottom();

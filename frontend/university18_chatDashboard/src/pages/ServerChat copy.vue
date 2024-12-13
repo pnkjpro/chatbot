@@ -424,7 +424,9 @@ const computedStudentList = computed(() => {
 
 socket.on("message", (data) => {
   console.log("Message Structure on Emit", data);
-  messages.value.push(data);
+  if(data.message != "student_ping") {
+    messages.value.push(data);
+  }
   scrollToBottom();
 });
 

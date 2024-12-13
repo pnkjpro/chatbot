@@ -23,7 +23,9 @@
             />
           </svg>
         </button>
-        <div class="w-20 h-20"></div>
+        <div class="w-96 h-20 flex">
+          <span style="display: flex; align-items: center;" class="font-bold text-xl text-green-900">Today Exam Chat</span>
+        </div>
       </div>
 
       <div
@@ -94,7 +96,7 @@
         :class="[
           'bg-[#ffffff] border-r border-[#d1d1d1] absolute lg:relative z-50',
           'transition-transform duration-300 ease-in-out',
-          'w-80 lg:w-80 h-full',
+          'w-96 lg:w-96 h-full',
           isSidebarOpen
             ? 'translate-x-0'
             : '-translate-x-full lg:translate-x-0',
@@ -168,7 +170,12 @@
                         : 'bg-gray-200 text-gray-600',
                     ]"
                   >
-                    {{ student.username }} | {{ student.examiner_username }}
+                    {{ student.username }}
+                  </span>
+                  <span
+                    class="px-1 py-0.5 text-xs font-semibold rounded-lg bg-gray-200 text-gray-600"
+                  >
+                    {{ student.examiner_username }}
                   </span>
                   <span class="text-xs text-gray-500 flex-shrink-0 ml-2">{{
                     formatTimestamp(student.timestamp, { addSuffix: true })
@@ -424,6 +431,9 @@ const computedStudentList = computed(() => {
 
 socket.on("message", (data) => {
   console.log("Message Structure on Emit", data);
+  if(data.message != "student_ping") {
+    messages.value.push(data);
+  }
   messages.value.push(data);
   scrollToBottom();
 });
@@ -432,8 +442,8 @@ function sendMessage() {
   if (newMessage.value.trim()) {
     const message = {
       room_id: selectedStudent.value.examination_id,
-      sender: examinerName,
-      sender_id: examinerUsername,
+      sender: examinerName || "examiner_name",
+      sender_id: examinerUsername || "examiner_username",
       recipient_id: selectedStudent.value.username,
       message: newMessage.value,
       clientcode: client,
