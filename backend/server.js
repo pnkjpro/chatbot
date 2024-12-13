@@ -147,7 +147,7 @@ app.get('/api/messages/:roomId', async(req, res) => {
 
 app.get('/api/students/:client', async(req, res) => {
   const { client } = req.params;
-  const query = `SELECT room_id, student_name, student_username, content, session_id, clientcode FROM messages WHERE session_status = ? AND clientcode = ?`;
+  const query = `SELECT room_id, student_name, student_username, examiner_username, content, session_id, clientcode FROM messages WHERE session_status = ? AND clientcode = ?`;
   const results = await db.execute(query, ['active', client]);
   return res.status(200).json(results[0]);
 });
