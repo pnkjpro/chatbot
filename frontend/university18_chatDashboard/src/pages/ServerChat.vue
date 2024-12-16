@@ -347,7 +347,7 @@ socket.on("newStudent", (data) => {
     if (existingStudent) {
       existingStudent.message = data.message;
       existingStudent.timestamp = data.timestamp;
-      if(data.senderType == 'student') {
+      if((data.senderType == 'student') && (data.room_id != selectedStudent.value.examination_id)) {
         existingStudent.unread = true; //do something with this
       }
     } else {
